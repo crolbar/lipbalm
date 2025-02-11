@@ -3,6 +3,6 @@
   of each line, and then again when we are writing the lines + padding
   we again get the string width of each line
   (10-20% improvement)
-- [ ] StringWidth
+- [x] better StringWidth (35-40% improvement, - support for icons and other multicell chars)
 - [ ] JoinHorizontal
 - [ ] basic ansi color injection

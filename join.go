@@ -83,7 +83,7 @@ func JoinHorizontal(pos Position, strs ...string) string {
 			b.WriteString(block[i])
 
 			// Also make lines the same length
-			b.WriteString(strings.Repeat(" ", maxWidths[j]-StringWidth(block[i])))
+			b.WriteString(strings.Repeat(" ", maxWidths[j]-GetStringWidth(block[i])))
 		}
 		if i < len(blocks[0])-1 {
 			b.WriteRune('\n')

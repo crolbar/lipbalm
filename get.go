@@ -1,12 +1,6 @@
 package lipbalm
 
-import (
-	"strings"
-
-	"github.com/charmbracelet/x/ansi/parser"
-	"github.com/mattn/go-runewidth"
-	"github.com/rivo/uniseg"
-)
+import "strings"
 
 // returns the string split on \n (so the lines)
 // the width of each line
@@ -16,7 +10,7 @@ func getLines(s string) (lines []string, widths []int, widest int) {
 	widths = make([]int, len(lines))
 
 	for i, l := range lines {
-		w := StringWidth(l)
+		w := GetStringWidth(l)
 		widths[i] = w
 		if widest < w {
 			widest = w
@@ -26,52 +20,32 @@ func getLines(s string) (lines []string, widths []int, widest int) {
 	return lines, widths, widest
 }
 
-
-type Method uint8
-
-const (
-	WcWidth Method = iota
-	GraphemeWidth
-)
-
-func StringWidth(s string) int {
-	return stringWidth(GraphemeWidth, s)
-}
-
-func StringWidthWc(s string) int {
-	return stringWidth(WcWidth, s)
-}
-
-func stringWidth(m Method, s string) int {
-	if s == "" {
-		return 0
-	}
-
+// returns the width of the strings
+// without ansi codes & chars < 32
+func GetStringWidth(s string) int {
 	var (
-		pstate  = parser.GroundState // initial state
-		cluster string
-		width   int
+		width   = 0
+		skiping = false
 	)
 
-	for i := 0; i < len(s); i++ {
-		state, action := parser.Table.Transition(pstate, s[i])
-		if state == parser.Utf8State {
-			var w int
-			cluster, _, w, _ = uniseg.FirstGraphemeClusterInString(s[i:], -1)
-			if m == WcWidth {
-				w = runewidth.StringWidth(cluster)
-			}
-			width += w
-			i += len(cluster) - 1
-			pstate = parser.GroundState
+	for _, r := range s {
+		if r == '\x1b' {
+			skiping = true
 			continue
 		}
 
-		if action == parser.PrintAction {
-			width++
+		if skiping {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+				skiping = false
+			}
+			continue
 		}
 
-		pstate = state
+		if r < 32 || r == 127 {
+			continue
+		}
+
+		width++
 	}
 
 	return width
