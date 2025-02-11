@@ -1,6 +1,5 @@
 package lipbalm
 
-
 type Position float64
 
 const (

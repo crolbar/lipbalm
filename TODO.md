@@ -4,5 +4,5 @@
   we again get the string width of each line
   (10-20% improvement)
 - [x] better StringWidth (35-40% improvement, - support for icons and other multicell chars)
-- [ ] JoinHorizontal
+- [x] JoinHorizontal
 - [ ] basic ansi color injection

@@ -5,24 +5,13 @@ import (
 	"strings"
 )
 
-// JoinHorizontal is a utility function for horizontally joining two
-// potentially multi-lined strings along a vertical axis. The first argument is
-// the position, with 0 being all the way at the top and 1 being all the way
-// at the bottom.
-//
-// If you just want to align to the top, center or bottom you may as well just
-// use the helper constants Top, Center, and Bottom.
-//
-// Example:
-//
-//	blockB := "...\n...\n..."
-//	blockA := "...\n...\n...\n...\n..."
-//
-//	// Join 20% from the top
-//	str := lipgloss.JoinHorizontal(0.2, blockA, blockB)
-//
-//	// Join on the top edge
-//	str := lipgloss.JoinHorizontal(lipgloss.Top, blockA, blockB)
+// joins multiline strings horizontally, so when we have two strings
+// " string \n one ", " string \n two "
+// we will get
+// " string  string \n one     two    "
+// so the first lines of the strings join, the second lines join and so on.
+// also adds padding to each line so it becomes as wide as the widest
+// line is that string, so we get a square
 func JoinHorizontal(pos Position, strs ...string) string {
 	if len(strs) == 0 {
 		return ""
@@ -32,62 +21,84 @@ func JoinHorizontal(pos Position, strs ...string) string {
 	}
 
 	var (
-		// Groups of strings broken into multiple lines
-		blocks = make([][]string, len(strs))
-
-		// Max line widths for the above text blocks
+		blocks    = make([][]string, len(strs))
 		maxWidths = make([]int, len(strs))
-
-		// Height of the tallest block
+		widths    = make([][]int, len(strs))
 		maxHeight int
 	)
 
-	// Break text blocks into lines and get max widths for each text block
 	for i, str := range strs {
-		blocks[i], _, maxWidths[i] = getLines(str)
-		if len(blocks[i]) > maxHeight {
-			maxHeight = len(blocks[i])
+		blocks[i], widths[i], maxWidths[i] = getLines(str)
+
+		lines := len(blocks[i])
+		if lines > maxHeight {
+			maxHeight = lines
 		}
 	}
 
-	// Add extra lines to make each side the same height
+	// add padding(lines) to blocks withs less than maxHeight lines
+	// so we get a nice square
 	for i := range blocks {
-		if len(blocks[i]) >= maxHeight {
+		lines := len(blocks[i])
+
+		if lines >= maxHeight {
 			continue
 		}
 
-		extraLines := make([]string, maxHeight-len(blocks[i]))
+		var (
+			extraLines  = make([]string, maxHeight-lines)
+			extraWidths = make([]int, maxHeight-lines)
+		)
 
-		switch pos { //nolint:exhaustive
+		switch pos {
 		case Top:
 			blocks[i] = append(blocks[i], extraLines...)
+			widths[i] = append(widths[i], extraWidths...)
 
 		case Bottom:
 			blocks[i] = append(extraLines, blocks[i]...)
+			widths[i] = append(extraWidths, widths[i]...)
 
-		default: // Somewhere in the middle
-			n := len(extraLines)
-			split := int(math.Round(float64(n) * pos.value()))
-			top := n - split
-			bottom := n - top
+		default:
+			var (
+				n      = len(extraLines)
+				split  = int(math.Round(pos.value() * float64(n)))
+				top    = n - split
+				bottom = n - top
+			)
 
 			blocks[i] = append(extraLines[top:], blocks[i]...)
+			widths[i] = append(extraWidths[top:], widths[i]...)
+
 			blocks[i] = append(blocks[i], extraLines[bottom:]...)
+			widths[i] = append(widths[i], extraWidths[bottom:]...)
 		}
 	}
 
-	// Merge lines
+	lastBlockIdx := len(blocks[0]) - 1
+
 	var b strings.Builder
-	for i := range blocks[0] { // remember, all blocks have the same number of members now
+	for i := range blocks[0] {
 		for j, block := range blocks {
 			b.WriteString(block[i])
 
-			// Also make lines the same length
-			b.WriteString(strings.Repeat(" ", maxWidths[j]-GetStringWidth(block[i])))
+			var (
+				blockMaxWidth = maxWidths[j]
+				lineWidth     = widths[j][i]
+
+				diff = blockMaxWidth - lineWidth
+			)
+
+			if diff > 0 {
+				b.WriteString(strings.Repeat(" ", diff))
+			}
 		}
-		if i < len(blocks[0])-1 {
-			b.WriteRune('\n')
+
+		if i == lastBlockIdx {
+			continue
 		}
+
+		b.WriteByte('\n')
 	}
 
 	return b.String()
@@ -170,7 +181,7 @@ func JoinVertical(pos Position, strs ...string) string {
 				break
 			}
 
-			b.WriteString("\n")
+			b.WriteByte('\n')
 		}
 	}
 
