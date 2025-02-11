@@ -23,7 +23,7 @@ func TestMain(t *testing.T) {
 	fmt.Printf("%q\n", JoinVertical(Center,
 		str1, str2,
 	))
-	fmt.Println("Without Grow:", time.Since(start))
+	fmt.Println("time for main", time.Since(start))
 
 	// fmt.Println()
 
@@ -53,6 +53,7 @@ func TestHJoin(t *testing.T) {
 }
 
 func TestBothJoin(t *testing.T) {
+	start := time.Now()
 	assert.Equal(t,
 		getDump("go29_screen"),
 		JoinHorizontal(Top,
@@ -63,6 +64,7 @@ func TestBothJoin(t *testing.T) {
 			getDump("go29_slider"),
 		),
 	)
+	fmt.Println("time for both", time.Since(start))
 }
 
 func getDump(name string) string {

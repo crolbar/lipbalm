@@ -44,7 +44,7 @@ func JoinHorizontal(pos Position, strs ...string) string {
 
 	// Break text blocks into lines and get max widths for each text block
 	for i, str := range strs {
-		blocks[i], maxWidths[i] = getLines(str)
+		blocks[i], _, maxWidths[i] = getLines(str)
 		if len(blocks[i]) > maxHeight {
 			maxHeight = len(blocks[i])
 		}
@@ -93,7 +93,6 @@ func JoinHorizontal(pos Position, strs ...string) string {
 	return b.String()
 }
 
-
 // joins multiline strings and adds padding to each line
 // so they have equal widths
 func JoinVertical(pos Position, strs ...string) string {
@@ -106,13 +105,14 @@ func JoinVertical(pos Position, strs ...string) string {
 
 	var (
 		blocks   = make([][]string, len(strs))
+		widths   = make([][]int, len(strs))
 		maxWidth int
 		numLines int
 	)
 
 	for i := range strs {
 		var w int
-		blocks[i], w = getLines(strs[i])
+		blocks[i], widths[i], w = getLines(strs[i])
 
 		numLines += len(blocks[i])
 		if w > maxWidth {
@@ -136,7 +136,7 @@ func JoinVertical(pos Position, strs ...string) string {
 			var (
 				atLastLine = j == blockLen-1
 
-				padding_width = maxWidth - StringWidth(line)
+				padding_width = maxWidth - widths[i][j]
 				padding       = strings.Repeat(" ", padding_width)
 			)
 

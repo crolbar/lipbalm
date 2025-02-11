@@ -8,17 +8,22 @@ import (
 	"github.com/rivo/uniseg"
 )
 
-func getLines(s string) (lines []string, widest int) {
+// returns the string split on \n (so the lines)
+// the width of each line
+// and the largest width
+func getLines(s string) (lines []string, widths []int, widest int) {
 	lines = strings.Split(s, "\n")
+	widths = make([]int, len(lines))
 
-	for _, l := range lines {
+	for i, l := range lines {
 		w := StringWidth(l)
+		widths[i] = w
 		if widest < w {
 			widest = w
 		}
 	}
 
-	return lines, widest
+	return lines, widths, widest
 }
 
 
