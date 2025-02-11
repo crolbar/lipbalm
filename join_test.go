@@ -6,8 +6,7 @@ import (
 	"testing"
 	"time"
 
-	// "github.com/charmbracelet/lipgloss"
-	"github.com/stretchr/testify/assert"
+	"github.com/crolbar/lipbalm/assert"
 )
 
 func TestMain(t *testing.T) {
