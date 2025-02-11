@@ -1,4 +1,4 @@
-package main
+package lipbalm
 
 
 type Position float64
