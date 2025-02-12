@@ -5,13 +5,19 @@ import (
 	"strings"
 )
 
-// joins multiline strings horizontally, so when we have two strings
-// " string \n one ", " string \n two "
-// we will get
-// " string  string \n one     two    "
-// so the first lines of the strings join, the second lines join and so on.
-// also adds padding to each line so it becomes as wide as the widest
-// line is that string, so we get a square
+// joins multiline strings horizontally
+//
+// Example:
+//
+//   str1 = " string \n one "
+//   str2 = " string \n two "
+//
+//   we will get:
+//   res = " string  string \n one     two    "
+//
+//   so the first lines of the strings join, the second lines join and so on.
+//   also adds padding to each line so it becomes as wide as the widest
+//   line is that string, so we get a square
 func JoinHorizontal(pos Position, strs ...string) string {
 	if len(strs) == 0 {
 		return ""
