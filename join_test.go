@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/crolbar/lipbalm/assert"
 )
@@ -30,7 +29,6 @@ func TestHJoin(t *testing.T) {
 }
 
 func TestBothJoin(t *testing.T) {
-	start := time.Now()
 	assert.Equal(t,
 		getDump("go29_screen"),
 		JoinHorizontal(Top,
@@ -41,7 +39,6 @@ func TestBothJoin(t *testing.T) {
 			getDump("go29_slider"),
 		),
 	)
-	fmt.Println("time for both", time.Since(start))
 }
 
 func getDump(name string) string {
