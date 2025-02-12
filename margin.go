@@ -108,18 +108,20 @@ func applyMargin(margin int, str string, pos ...marginPos) string {
 	}
 
 	// vertical
-	maxWidth = maxWidth +
-		iff(hasLeft, margin, 0) +
-		iff(hasRight, margin, 0)
+	if hasTop || hasBottom {
+		maxWidth = maxWidth +
+			iff(hasLeft, margin, 0) +
+			iff(hasRight, margin, 0)
 
-	padding := strings.Repeat(" ", maxWidth)
+		padding := strings.Repeat(" ", maxWidth)
 
-	if hasTop {
-		str = strings.Repeat(padding+"\n", margin) + str
-	}
+		if hasTop {
+			str = strings.Repeat(padding+"\n", margin) + str
+		}
 
-	if hasBottom {
-		str = str + strings.Repeat("\n"+padding, margin)
+		if hasBottom {
+			str = str + strings.Repeat("\n"+padding, margin)
+		}
 	}
 
 	return str
