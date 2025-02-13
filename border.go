@@ -112,8 +112,7 @@ func Border(
 
 		lastLineIdx = numLines - 1
 
-		fullColorLen = len(b.ColorFg) +
-			len(b.ColorBg) +
+		fullColorLen = len(b.ColorFg) + len(b.ColorBg) +
 			iff(b.ColorBg != "" || b.ColorFg != "", len(ansi_reset), 0)
 
 		sbSize = len(str) +
@@ -125,8 +124,14 @@ func Border(
 		writeToSb = writeStringToSb(&sb)
 
 		applyColor = func() {
-			doIf(b.ColorFg, writeToSb)
-			doIf(b.ColorBg, writeToSb)
+			if b.ColorBg != "" && b.ColorFg != "" {
+				sb.WriteString(
+					b.ColorFg[:len(b.ColorFg)-1] + ";" +
+						b.ColorBg[2:])
+			} else {
+				doIf(b.ColorFg, writeToSb)
+				doIf(b.ColorBg, writeToSb)
+			}
 		}
 		resetColor = func() {
 			doIfp(b.ColorFg != "" || b.ColorBg != "",
