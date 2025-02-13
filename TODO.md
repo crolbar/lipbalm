@@ -6,5 +6,5 @@
 -   [x] better StringWidth (35-40% improvement, - support for icons and other multicell chars)
 -   [x] JoinHorizontal
 -   [x] color: combine bg + fg into one ansi code
--   [ ] expand{Vertically,Horizontally} funcs that add whitespaces/new lines to the string + alignment
+-   [x] expand{Vertically,Horizontally} funcs that add whitespaces/new lines to the string + alignment
 -   [x] basic ansi color injection

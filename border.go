@@ -96,7 +96,7 @@ func Border(
 	str string,
 	disabled ...bool,
 ) string {
-	str = MakeSquare(str, Right)
+	str = MakeSquare(Right, str)
 
 	var (
 		top, right, bottom, left = getDisabled(disabled)

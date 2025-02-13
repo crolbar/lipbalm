@@ -8,7 +8,7 @@ import (
 // adds padding to a multiline string to make it square-ish
 // so every line is equal width
 // position specifIes where to add the padding: Left, Right, Center
-func MakeSquare(str string, position Position) string {
+func MakeSquare(position Position, str string) string {
 	if len(str) == 0 {
 		return ""
 	}
