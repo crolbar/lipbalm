@@ -2,6 +2,9 @@ package lipbalm
 
 import "strings"
 
+// ColorFg/ColorBg:
+//
+//	ansi color code (use Color/ColorRGB)
 type BorderType struct {
 	Top         string
 	Bottom      string
@@ -11,10 +14,18 @@ type BorderType struct {
 	TopRight    string
 	BottomLeft  string
 	BottomRight string
+	ColorFg     string
+	ColorBg     string
 }
 
-var (
-	normalBorder = BorderType{
+// color:
+//
+//	ansi color code (use Color/ColorRGB)
+//	[0] for foreground, [1] for background
+func NormalBorder(color ...string) BorderType {
+	colorFg, colorBg := getColor(color)
+
+	return BorderType{
 		Top:         "─",
 		Bottom:      "─",
 		Left:        "│",
@@ -23,9 +34,15 @@ var (
 		TopRight:    "┐",
 		BottomLeft:  "└",
 		BottomRight: "┘",
+		ColorFg:     colorFg,
+		ColorBg:     colorBg,
 	}
+}
 
-	roundedBorder = BorderType{
+func RoundedBorder(color ...string) BorderType {
+	colorFg, colorBg := getColor(color)
+
+	return BorderType{
 		Top:         "─",
 		Bottom:      "─",
 		Left:        "│",
@@ -34,15 +51,26 @@ var (
 		TopRight:    "╮",
 		BottomLeft:  "╰",
 		BottomRight: "╯",
+		ColorFg:     colorFg,
+		ColorBg:     colorBg,
 	}
-)
-
-func NormalBorder() BorderType {
-	return normalBorder
 }
 
-func RoundedBorder() BorderType {
-	return roundedBorder
+func getColor(color []string) (fg, bg string) {
+	var (
+		colorFg = ""
+		colorBg = ""
+	)
+
+	switch len(color) {
+	case 2:
+		colorBg = color[1]
+		fallthrough
+	case 1:
+		colorFg = color[0]
+	}
+
+	return colorFg, colorBg
 }
 
 func getDisabled(disabled []bool) (top bool, right bool, bottom bool, left bool) {
@@ -63,7 +91,11 @@ func getDisabled(disabled []bool) (top bool, right bool, bottom bool, left bool)
 	return !top, !right, !bottom, !left
 }
 
-func Border(b BorderType, str string, disabled ...bool) string {
+func Border(
+	b BorderType,
+	str string,
+	disabled ...bool,
+) string {
 	str = MakeSquare(str, Right)
 
 	var (
@@ -80,29 +112,51 @@ func Border(b BorderType, str string, disabled ...bool) string {
 
 		lastLineIdx = numLines - 1
 
+		fullColorLen = len(b.ColorFg) +
+			len(b.ColorBg) +
+			iff(b.ColorBg != "" || b.ColorFg != "", len(ansi_reset), 0)
+
 		sbSize = len(str) +
-			iff(top, len(topBorder)+1, 0) +
-			iff(bottom, len(bottomBorder)+1, 0) +
-			iff(left, numLines*len(b.Left), 0) +
-			iff(right, numLines*len(b.Right), 0)
+			iff(top, len(topBorder)+1+fullColorLen, 0) + // top border
+			iff(bottom, len(bottomBorder)+1+fullColorLen, 0) + // bottom border
+			iff(left, numLines*(len(b.Left)+fullColorLen), 0) + // left border
+			iff(right, numLines*(len(b.Right)+fullColorLen), 0) // right border
+
+		writeToSb = writeStringToSb(&sb)
+
+		applyColor = func() {
+			doIf(b.ColorFg, writeToSb)
+			doIf(b.ColorBg, writeToSb)
+		}
+		resetColor = func() {
+			doIfp(b.ColorFg != "" || b.ColorBg != "",
+				ansi_reset, writeToSb)
+		}
 	)
 
 	sb.Grow(sbSize)
 
 	if top {
+		applyColor()
 		sb.WriteString(topBorder)
+		resetColor()
+
 		sb.WriteByte('\n')
 	}
 
 	for i, line := range lines {
 		if left {
+			applyColor()
 			sb.WriteString(b.Left)
+			resetColor()
 		}
 
 		sb.WriteString(line)
 
 		if right {
+			applyColor()
 			sb.WriteString(b.Right)
+			resetColor()
 		}
 
 		if i == lastLineIdx {
@@ -114,7 +168,10 @@ func Border(b BorderType, str string, disabled ...bool) string {
 
 	if bottom {
 		sb.WriteByte('\n')
+
+		applyColor()
 		sb.WriteString(bottomBorder)
+		resetColor()
 	}
 
 	return sb.String()

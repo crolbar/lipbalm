@@ -71,3 +71,28 @@ func iff[T int | string](b bool, f, s T) T {
 	}
 	return s
 }
+
+func writeStringToSb(sb *strings.Builder) func(s string) {
+	return func(s string) {
+		sb.WriteString(s)
+	}
+}
+
+func doIf[T string](b T, c func(s T)) {
+	if b != "" {
+		c(b)
+	}
+}
+
+func doIfp[B bool | string, T string](b B, w T, c func(s T)) {
+	switch v := any(b).(type) {
+	case string:
+		if v != "" {
+			c(w)
+		}
+	case bool:
+		if v {
+			c(w)
+		}
+	}
+}

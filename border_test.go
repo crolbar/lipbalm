@@ -8,8 +8,8 @@ import (
 func TestBorderTop(t *testing.T) {
 	s := "something\nto border\nup"
 	assert.Equal(t,
-		"─────────\nsomething\nto border\nup       ",
-		Border(NormalBorder(), s, false, true, true, true),
+		"\x1b[38;5;23m\x1b[48;5;255m┌─────────┐\x1b[0m\n\x1b[38;5;23m\x1b[48;5;255m│\x1b[0msomething\x1b[38;5;23m\x1b[48;5;255m│\x1b[0m\n\x1b[38;5;23m\x1b[48;5;255m│\x1b[0mto border\x1b[38;5;23m\x1b[48;5;255m│\x1b[0m\n\x1b[38;5;23m\x1b[48;5;255m│\x1b[0mup       \x1b[38;5;23m\x1b[48;5;255m│\x1b[0m\n\x1b[38;5;23m\x1b[48;5;255m└─────────┘\x1b[0m",
+		Border(NormalBorder(Color(23), ColorBg(255)), s),
 	)
 }
 

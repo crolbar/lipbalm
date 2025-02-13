@@ -5,4 +5,5 @@
   (10-20% improvement)
 - [x] better StringWidth (35-40% improvement, - support for icons and other multicell chars)
 - [x] JoinHorizontal
+- [ ] color: combine bg + fg into one ansi code
 - [ ] basic ansi color injection
