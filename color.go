@@ -3,7 +3,7 @@ package lipbalm
 import "strings"
 
 const (
-	ansi_start byte   = '\x1b'
+	ansi_esc   byte   = '\x1b'
 	ansi_end   byte   = 'm'
 	ansi_fg    uint8  = 38
 	ansi_bg    uint8  = 48
@@ -12,11 +12,26 @@ const (
 	ansi_tc    byte   = '2'
 )
 
+// sets the color of the string to the color specified
+// can be background/foreground
+func SetColor(color string, str string) string {
+	if str[0] == ansi_esc {
+		color = color[:len(color)-1] + ";" // remove end
+		str = str[2 : len(str)-4]          // remove esc & reset
+	}
+
+	var sb strings.Builder
+	sb.WriteString(color)
+	sb.WriteString(str)
+	sb.WriteString(ansi_reset)
+	return sb.String()
+}
+
 // 256 color code
 func Color(code uint8) string {
 	var sb strings.Builder
 
-	sb.WriteByte(ansi_start)
+	sb.WriteByte(ansi_esc)
 	sb.WriteByte('[')
 	writeBytes(&sb, getCodeBytes(ansi_fg))
 	sb.WriteByte(';')
@@ -32,7 +47,7 @@ func Color(code uint8) string {
 func ColorBg(code uint8) string {
 	var sb strings.Builder
 
-	sb.WriteByte(ansi_start)
+	sb.WriteByte(ansi_esc)
 	sb.WriteByte('[')
 	writeBytes(&sb, getCodeBytes(ansi_bg))
 	sb.WriteByte(';')
@@ -48,7 +63,7 @@ func ColorBg(code uint8) string {
 func ColorRGB(R, G, B uint8) string {
 	var sb strings.Builder
 
-	sb.WriteByte(ansi_start)
+	sb.WriteByte(ansi_esc)
 	sb.WriteByte('[')
 	writeBytes(&sb, getCodeBytes(ansi_fg))
 	sb.WriteByte(';')
@@ -68,7 +83,7 @@ func ColorRGB(R, G, B uint8) string {
 func ColorBgRGB(R, G, B uint8) string {
 	var sb strings.Builder
 
-	sb.WriteByte(ansi_start)
+	sb.WriteByte(ansi_esc)
 	sb.WriteByte('[')
 	writeBytes(&sb, getCodeBytes(ansi_bg))
 	sb.WriteByte(';')
