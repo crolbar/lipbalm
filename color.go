@@ -15,15 +15,35 @@ const (
 // sets the color of the string to the color specified
 // can be background/foreground
 func SetColor(color string, str string) string {
-	if str[0] == ansi_esc {
-		color = color[:len(color)-1] + ";" // remove end
-		str = str[2 : len(str)-4]          // remove esc & reset
+	var (
+		lines       = strings.Split(str, "\n")
+		lastLineIdx = len(lines) - 1
+
+		clr string = color
+		sb  strings.Builder
+	)
+
+	for i, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+
+		if line[0] == ansi_esc {
+			clr = color[:len(color)-1] + ";" // remove end
+			line = line[2 : len(line)-4]     // remove esc & reset
+		}
+
+		sb.WriteString(clr)
+		sb.WriteString(line)
+		sb.WriteString(ansi_reset)
+
+		if i == lastLineIdx {
+			break
+		}
+
+		sb.WriteByte('\n')
 	}
 
-	var sb strings.Builder
-	sb.WriteString(color)
-	sb.WriteString(str)
-	sb.WriteString(ansi_reset)
 	return sb.String()
 }
 
