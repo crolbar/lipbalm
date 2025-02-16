@@ -8,3 +8,4 @@
 -   [x] color: combine bg + fg into one ansi code
 -   [x] expand{Vertically,Horizontally} funcs that add whitespaces/new lines to the string + alignment
 -   [x] basic ansi color injection
+-   [ ] ratatui like layout creation
