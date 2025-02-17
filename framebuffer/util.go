@@ -9,7 +9,7 @@ import (
 func ensureSize(str string, width, height uint16) string {
 	var (
 		// TODO
-		position = lipbalm.Left
+		position = lipbalm.Right
 	)
 
 	lines, widths, _ := lipbalm.GetLines(str)
@@ -17,12 +17,6 @@ func ensureSize(str string, width, height uint16) string {
 	var b strings.Builder
 	lastLineIdx := len(lines) - 1
 	for i, line := range lines {
-
-		// shring height
-		if i >= int(height) {
-			break
-		}
-
 		lineWidth := widths[i]
 
 		// grow width
@@ -40,7 +34,8 @@ func ensureSize(str string, width, height uint16) string {
 			b.WriteString(line)
 		}
 
-		if i == lastLineIdx {
+		// shring height
+		if i == int(height)-1 || i == lastLineIdx {
 			break
 		}
 

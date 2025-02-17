@@ -20,7 +20,7 @@ func TestM(t *testing.T) {
 
 	fb.RenderString(
 		"yeahh\nhelllaanltoheu",
-		layout.NewRect(2, 7, 10, 1),
+		layout.NewRect(0, 7, 10, 1),
 	)
 
 	frame := fb.View()
@@ -51,6 +51,19 @@ func TestEnsureSize(t *testing.T) {
 	str = ""
 	width = 34
 	height = 72
+
+	str = ensureSize(str, uint16(width), uint16(height))
+
+	lines = strings.Split(str, "\n")
+
+	assert.Equal(t, height, len(lines))
+	for _, line := range lines {
+		assert.Equal(t, width, len(line))
+	}
+
+	str = "yeahh\nhelllaanltoheu"
+	width = 5
+	height = 1
 
 	str = ensureSize(str, uint16(width), uint16(height))
 
