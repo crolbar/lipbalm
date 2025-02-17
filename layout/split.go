@@ -9,11 +9,11 @@ func (l Layout) Split(rect Rect) []Rect {
 	switch l.direction {
 	// when spiting horizontally we split the height
 	case Horizontal:
-		size = rect.width
+		size = rect.Width
 
 	// when spiting vertically we split the height
 	case Vertical:
-		size = rect.height
+		size = rect.Height
 	}
 
 
@@ -49,10 +49,10 @@ func (l Layout) Split(rect Rect) []Rect {
 
 	var (
 		splits = make([]Rect, numOfSplits)
-		x      = rect.x
-		y      = rect.y
-		width  = rect.width
-		height = rect.height
+		x      = rect.X
+		y      = rect.Y
+		width  = rect.Width
+		height = rect.Height
 	)
 
 	for i, size := range alocatedSizes {
@@ -60,18 +60,18 @@ func (l Layout) Split(rect Rect) []Rect {
 		switch l.direction {
 		case Vertical:
 			rect = Rect{
-				x:      x,
-				y:      y,
-				width:  width,
-				height: size,
+				X:      x,
+				Y:      y,
+				Width:  width,
+				Height: size,
 			}
 			y += size
 		case Horizontal:
 			rect = Rect{
-				x:      x,
-				y:      y,
-				width:  size,
-				height: height,
+				X:      x,
+				Y:      y,
+				Width:  size,
+				Height: height,
 			}
 			x += size
 		}

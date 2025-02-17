@@ -30,7 +30,7 @@ func ExpandVertical(height int, alignment Position, str string) string {
 		return padding + str
 	default:
 		var (
-			split = int(math.Round(float64(padding_height) * alignment.value()))
+			split = int(math.Round(float64(padding_height) * alignment.Value()))
 			right = padding_height - split
 			left  = padding_height - right
 		)
@@ -45,7 +45,7 @@ func ExpandVertical(height int, alignment Position, str string) string {
 // can be use as alignment function if used with n=0
 func ExpandHorizontal(width int, alignment Position, str string) string {
 	var (
-		lines, widths, maxWidth = getLines(str)
+		lines, widths, maxWidth = GetLines(str)
 		numLines                = len(lines)
 
 		sb strings.Builder
@@ -78,7 +78,7 @@ func ExpandHorizontal(width int, alignment Position, str string) string {
 				break
 			}
 
-			split := int(math.Round(float64(padding_width) * alignment.value()))
+			split := int(math.Round(float64(padding_width) * alignment.Value()))
 			right := padding_width - split
 			left := padding_width - right
 

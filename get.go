@@ -5,7 +5,7 @@ import "strings"
 // returns the string split on \n (so the lines)
 // the width of each line
 // and the largest width
-func getLines(s string) (lines []string, widths []int, widest int) {
+func GetLines(s string) (lines []string, widths []int, widest int) {
 	lines = strings.Split(s, "\n")
 	widths = make([]int, len(lines))
 

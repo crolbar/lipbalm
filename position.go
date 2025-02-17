@@ -10,6 +10,6 @@ const (
 	Right  Position = 1.0
 )
 
-func (p Position) value() float64 {
+func (p Position) Value() float64 {
 	return clamp(float64(p), 0, 1)
 }
