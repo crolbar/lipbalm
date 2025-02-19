@@ -1,9 +1,9 @@
 package framebuffer
 
 import (
-	"strings"
-
+	"fmt"
 	"github.com/crolbar/lipbalm/layout"
+	"strings"
 )
 
 type FrameBuffer struct {
@@ -34,33 +34,55 @@ func NewFrameBuffer(width, height uint16) FrameBuffer {
 	}
 }
 
+func (f FrameBuffer) Size() layout.Rect {
+	return layout.Rect{
+		X:      0,
+		Y:      0,
+		Width:  f.width,
+		Height: f.height,
+	}
+}
+
+// write a string to the specified rect of the framebuffer.
+// doesn't support writing to the same place two different times
 func (f *FrameBuffer) RenderString(
 	str string,
 	rect layout.Rect,
 ) {
-	if int(rect.Y) > len(f.frame) {
-		panic("rect.y out of bounds")
-	}
-
-	str = ensureSize(str, rect.Width, rect.Height)
-
 	var (
-		lines = strings.Split(str, "\n")
+		endY = (rect.Y + rect.Height) - 1
+		endX = (rect.X + rect.Width) - 1
 	)
 
+	if endX >= f.width || endY >= f.height {
+		panic(fmt.Sprintf(
+			"rect: %v went out of bounds of FrameBuffer: %v", rect, f,
+		))
+	}
+
+	if rect.Width <= 0 || rect.Height <= 0 {
+		return
+	}
+
+	// make sure that the string is exacly `rect.Width` width and `rect.Height` height
+	str = ensureSize(str, rect.Width, rect.Height)
+
+	lines := strings.Split(str, "\n")
 	for i, line := range lines {
 		var (
-			frameLineIdx = rect.Y + uint16(i)
-			frameLine    = f.frame[frameLineIdx]
-		)
-		if int(rect.X) > len(frameLine) {
-			panic("rect.x out of bounds")
-		}
+			frameLineIdx   = rect.Y + uint16(i)
+			frameLineRunes = []rune(f.frame[frameLineIdx])
 
-		f.frame[frameLineIdx] =
-			frameLine[:rect.X] + // everything before the rect's x, its excluding so x is free
-				line +
-				frameLine[rect.X+rect.Width:] // everything after x + width
+			// x position on the frameLine with skipped ansi codes
+			x = getWithoutAnsi(int(rect.X), f.frame[frameLineIdx])
+
+			// everything before the rect's x. its excluding, so x is free
+			before = string(frameLineRunes[:x])
+			// everything after x + width
+			after = string(frameLineRunes[uint16(x)+rect.Width:])
+		)
+
+		f.frame[frameLineIdx] = before + line + after
 	}
 }
 

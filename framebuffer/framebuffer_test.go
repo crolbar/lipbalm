@@ -2,7 +2,7 @@ package framebuffer
 
 import (
 	"fmt"
-	"strings"
+	"os"
 	"testing"
 
 	"github.com/crolbar/lipbalm"
@@ -10,67 +10,155 @@ import (
 	"github.com/crolbar/lipbalm/layout"
 )
 
-func TestM(t *testing.T) {
-	fb := NewFrameBuffer(10, 10)
+var l = layout.DefaultLayout()
+
+func TestSplit2Color(t *testing.T) {
+	fb := NewFrameBuffer(100, 26)
+	splitsA := make([]layout.Rect, 0)
+
+	splits := l.Vercital().
+		Constrains(
+			layout.NewConstrain(layout.Percent, 100),
+			layout.NewConstrain(layout.Min, 4),
+		).Split(fb.Size())
+	splitsA = append(splitsA, splits[1])
+
+	hsplits := l.Horizontal().
+		Constrains(
+			layout.NewConstrain(layout.Length, 5),
+			layout.NewConstrain(layout.Percent, 20),
+			layout.NewConstrain(layout.Percent, 20),
+			layout.NewConstrain(layout.Min, 5),
+			layout.NewConstrain(layout.Min, 5),
+			layout.NewConstrain(layout.Percent, 20),
+			layout.NewConstrain(layout.Percent, 20),
+			layout.NewConstrain(layout.Length, 5),
+		).Split(splits[0])
+
+	splitsA = append(splitsA, hsplits[0])
+	splitsA = append(splitsA, hsplits[3:5]...)
+	splitsA = append(splitsA, hsplits[7])
+
+	for _, s := range []layout.Rect{
+		hsplits[1], hsplits[2],
+		hsplits[5], hsplits[6],
+	} {
+		splits = l.Vercital().
+			Constrains(
+				layout.NewConstrain(layout.Percent, 50),
+				layout.NewConstrain(layout.Percent, 50),
+			).Split(s)
+		splitsA = append(splitsA, splits...)
+	}
+
+	for i, s := range splitsA {
+		fb.RenderString(
+			lipbalm.Border(lipbalm.NormalBorder(lipbalm.Color(uint8(i+100))),
+				lipbalm.ExpandVertical(int(s.Height)-2, lipbalm.Center,
+					lipbalm.ExpandHorizontal(int(s.Width)-2, lipbalm.Center,
+						lipbalm.SetColor(lipbalm.Color(9), fmt.Sprintf("%d", i))),
+				)),
+			s,
+		)
+	}
+
+	frame := fb.View()
+
+	// fmt.Println(frame)
+
+	assert.Equal(t, getDump("splits2"), frame)
+}
+
+func TestSplits1(t *testing.T) {
+	fb := NewFrameBuffer(100, 26)
+	splitsA := make([]layout.Rect, 0)
+
+	hsplits := l.Horizontal().
+		Constrains(
+			layout.NewConstrain(layout.Percent, 25),
+			layout.NewConstrain(layout.Percent, 50),
+			layout.NewConstrain(layout.Percent, 25),
+		).Split(fb.Size())
+
+	vsplits := l.Vercital().
+		Constrains(
+			layout.NewConstrain(layout.Percent, 50),
+			layout.NewConstrain(layout.Percent, 50),
+		).Split(hsplits[0])
+	splitsA = append(splitsA, vsplits...)
+
+	vsplits = l.Vercital().
+		Constrains(
+			layout.NewConstrain(layout.Percent, 50),
+			layout.NewConstrain(layout.Percent, 50),
+		).Split(hsplits[2])
+	splitsA = append(splitsA, vsplits...)
+
+	vsplits = l.Vercital().
+		Constrains(
+			layout.NewConstrain(layout.Length, 3),
+			layout.NewConstrain(layout.Percent, 50),
+			layout.NewConstrain(layout.Percent, 50),
+			layout.NewConstrain(layout.Length, 3),
+		).Split(hsplits[1])
+	splitsA = append(splitsA, vsplits...)
+
+	for _, s := range splitsA {
+		fb.RenderString(
+			lipbalm.Border(lipbalm.NormalBorder(),
+				lipbalm.ExpandVertical(int(s.Height)-2, lipbalm.Bottom,
+					lipbalm.ExpandHorizontal(int(s.Width)-2, lipbalm.Bottom, ""),
+				)),
+			s,
+		)
+	}
+
+	frame := fb.View()
+
+	assert.Equal(t, getDump("splits1"), frame)
+}
+
+func TestVertHalfFB(t *testing.T) {
+	fb := NewFrameBuffer(50, 50)
+
+	splits := l.Horizontal().
+		Constrains(
+			layout.NewConstrain(layout.Percent, 50),
+			layout.NewConstrain(layout.Percent, 50),
+		).Split(fb.Size())
+
+	border := lipbalm.NormalBorder(lipbalm.Color(70))
 
 	fb.RenderString(
-		"yeahh\nhelllaanltoheu\nthree\nfour",
-		layout.NewRect(3, 5, 5, 4),
+		lipbalm.Border(border,
+			lipbalm.ExpandVertical(int(splits[0].Height)-2, lipbalm.Bottom,
+				lipbalm.ExpandHorizontal(int(splits[0].Width)-2, lipbalm.Bottom, ""),
+			)),
+		splits[0],
 	)
 
 	fb.RenderString(
-		"yeahh\nhelllaanltoheu",
-		layout.NewRect(0, 7, 10, 1),
+		lipbalm.Border(border,
+			lipbalm.ExpandVertical(int(splits[1].Height)-2, lipbalm.Bottom,
+				lipbalm.ExpandHorizontal(int(splits[1].Width)-2, lipbalm.Bottom, ""),
+			)),
+		splits[1],
 	)
 
 	frame := fb.View()
 
-	fmt.Println(lipbalm.Border(lipbalm.NormalBorder(), frame))
+	// fmt.Println(frame)
 
-	// assert.Equal(t,
-	// 	"          \n          \n          \n          \n          \n          \n          \n          \n          \n          ",
-	// 	frame)
+	assert.Equal(t,
+		"┌──────────────────────────────────────────────────┐\n│\x1b[38;5;70m┌───────────────────────┐\x1b[0m\x1b[38;5;70m┌───────────────────────┐\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m└───────────────────────┘\x1b[0m\x1b[38;5;70m└───────────────────────┘\x1b[0m│\n└──────────────────────────────────────────────────┘",
+		lipbalm.Border(lipbalm.NormalBorder(), frame),
+	)
 }
 
-func TestEnsureSize(t *testing.T) {
-	var (
-		str    = "0128347091207840712378478127384781237478912378478078aosntehu\naohuathaoeu\naoentuh\ntisheu\n83nteud"
-		width  = 50
-		height = 20
-	)
-
-	str = ensureSize(str, uint16(width), uint16(height))
-
-	lines := strings.Split(str, "\n")
-
-	assert.Equal(t, height, len(lines))
-	for _, line := range lines {
-		assert.Equal(t, width, len(line))
+func getDump(name string) string {
+	data, err := os.ReadFile(fmt.Sprintf("%s.dump", name))
+	if err != nil {
+		panic(err)
 	}
-
-	str = ""
-	width = 34
-	height = 72
-
-	str = ensureSize(str, uint16(width), uint16(height))
-
-	lines = strings.Split(str, "\n")
-
-	assert.Equal(t, height, len(lines))
-	for _, line := range lines {
-		assert.Equal(t, width, len(line))
-	}
-
-	str = "yeahh\nhelllaanltoheu"
-	width = 5
-	height = 1
-
-	str = ensureSize(str, uint16(width), uint16(height))
-
-	lines = strings.Split(str, "\n")
-
-	assert.Equal(t, height, len(lines))
-	for _, line := range lines {
-		assert.Equal(t, width, len(line))
-	}
+	return string(data)
 }

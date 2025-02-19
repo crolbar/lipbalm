@@ -26,7 +26,7 @@ func (l Layout) Horizontal() Layout {
 	return l
 }
 
-func (l Layout) Constrains(constrains []Constrain) Layout {
+func (l Layout) Constrains(constrains ...Constrain) Layout {
 	l.constrains = constrains
 	return l
 }
