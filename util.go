@@ -13,7 +13,7 @@ func MakeSquare(position Position, str string) string {
 		return ""
 	}
 
-	lines, widths, maxWidth := getLines(str)
+	lines, widths, maxWidth := GetLines(str)
 
 	if len(lines) == 1 {
 		return str
@@ -42,7 +42,7 @@ func MakeSquare(position Position, str string) string {
 				break
 			}
 
-			split := int(math.Round(float64(padding_width) * position.value()))
+			split := int(math.Round(float64(padding_width) * position.Value()))
 			right := padding_width - split
 			left := padding_width - right
 

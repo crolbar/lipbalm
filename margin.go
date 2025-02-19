@@ -67,7 +67,7 @@ func applyMargin(margin int, str string, pos ...marginPos) string {
 		}
 	}
 
-	lines, _, maxWidth := getLines(str)
+	lines, _, maxWidth := GetLines(str)
 
 	// horizontal
 	if hasLeft || hasRight {

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Equal[T int | string](t *testing.T, expected, actual T) {
+func Equal[T int | string | bool | uint16](t *testing.T, expected, actual T) {
 	if expected == actual {
 		return
 	}

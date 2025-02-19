@@ -34,7 +34,7 @@ func JoinHorizontal(pos Position, strs ...string) string {
 	)
 
 	for i, str := range strs {
-		blocks[i], widths[i], maxWidths[i] = getLines(str)
+		blocks[i], widths[i], maxWidths[i] = GetLines(str)
 
 		lines := len(blocks[i])
 		if lines > maxHeight {
@@ -68,7 +68,7 @@ func JoinHorizontal(pos Position, strs ...string) string {
 		default:
 			var (
 				n      = len(extraLines)
-				split  = int(math.Round(pos.value() * float64(n)))
+				split  = int(math.Round(pos.Value() * float64(n)))
 				top    = n - split
 				bottom = n - top
 			)
@@ -129,7 +129,7 @@ func JoinVertical(pos Position, strs ...string) string {
 
 	for i := range strs {
 		var w int
-		blocks[i], widths[i], w = getLines(strs[i])
+		blocks[i], widths[i], w = GetLines(strs[i])
 
 		numLines += len(blocks[i])
 		if w > maxWidth {
@@ -174,7 +174,7 @@ func JoinVertical(pos Position, strs ...string) string {
 
 				// split the padding and put it to the start & end of the line
 				// so we get a line centered
-				split := int(math.Round(float64(padding_width) * pos.value()))
+				split := int(math.Round(float64(padding_width) * pos.Value()))
 				right := padding_width - split
 				left := padding_width - right
 
