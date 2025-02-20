@@ -6,27 +6,34 @@ import (
 	"strings"
 )
 
-func ensureSize(str string, width, height uint16) string {
+func ensureSize(str string, width, height uint16, alignments ...lipbalm.Position) string {
 	var (
-		// TODO
-		position = lipbalm.Right
+		halignment, valignment = getAlignments(alignments)
+
+		lines, widths, _ = lipbalm.GetLines(str)
+
+		lastLineIdx = len(lines) - 1
+
+		paddingHeight = int(height) - len(lines)
+		paddingLine   = strings.Repeat(" ", int(width))
+		paddingSplit  = int(math.Round(float64(paddingHeight) * valignment.Value()))
+		paddingTop    = paddingHeight - paddingSplit
+		paddingBottom = paddingHeight - paddingTop
+
+		b strings.Builder
 	)
 
-	lines, widths, _ := lipbalm.GetLines(str)
+	// top padding
+	if len(lines) < int(height) && valignment < lipbalm.Bottom {
+		b.WriteString(strings.Repeat("\n"+paddingLine, paddingTop))
+	}
 
-	var b strings.Builder
-	lastLineIdx := len(lines) - 1
 	for i, line := range lines {
 		lineWidth := widths[i]
 
 		// grow width
 		if uint16(lineWidth) < width {
-			applyPadding(&b, line, position, int(width), lineWidth)
-		} else
-
-		// shrink width
-		if uint16(lineWidth) > width {
-			b.WriteString(line[:width])
+			applyPadding(&b, line, halignment, int(width), lineWidth)
 		} else
 
 		// exact width
@@ -34,19 +41,16 @@ func ensureSize(str string, width, height uint16) string {
 			b.WriteString(line)
 		}
 
-		// shring height
-		if i >= int(height)-1 || i == lastLineIdx {
+		if i == lastLineIdx {
 			break
 		}
 
 		b.WriteByte('\n')
 	}
 
-	// grow height
-	if len(lines) < int(height) {
-		paddingLine := strings.Repeat(" ", int(width))
-		padding := strings.Repeat("\n"+paddingLine, int(height)-len(lines))
-		b.WriteString(padding)
+	// bottom padding
+	if len(lines) < int(height) && valignment > lipbalm.Top {
+		b.WriteString(strings.Repeat("\n"+paddingLine, paddingBottom))
 	}
 
 	return b.String()
@@ -141,4 +145,18 @@ func getWithoutAnsi(n int, s string) int {
 	}
 
 	return lastVisibleIdx
+}
+
+func getAlignments(alignments []lipbalm.Position) (halignment, valignment lipbalm.Position) {
+	halignment = lipbalm.Right
+	valignment = lipbalm.Right
+	if len(alignments) > 0 {
+		halignment = alignments[0]
+	}
+
+	if len(alignments) > 1 {
+		valignment = alignments[1]
+	}
+
+	return halignment, valignment
 }

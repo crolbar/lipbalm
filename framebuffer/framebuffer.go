@@ -1,7 +1,7 @@
 package framebuffer
 
 import (
-	"fmt"
+	"github.com/crolbar/lipbalm"
 	"github.com/crolbar/lipbalm/layout"
 	"strings"
 )
@@ -34,6 +34,25 @@ func NewFrameBuffer(width, height uint16) FrameBuffer {
 	}
 }
 
+func (f *FrameBuffer) Resize(width, height int) {
+	f.width = uint16(width)
+	f.height = uint16(height)
+	f.Clear()
+}
+
+func (f *FrameBuffer) Clear() {
+	var (
+		line  = strings.Repeat(" ", int(f.width))
+		frame = make([]string, f.height)
+	)
+
+	for i := range frame {
+		frame[i] = line
+	}
+
+	f.frame = frame
+}
+
 func (f FrameBuffer) Size() layout.Rect {
 	return layout.Rect{
 		X:      0,
@@ -45,45 +64,46 @@ func (f FrameBuffer) Size() layout.Rect {
 
 // write a string to the specified rect of the framebuffer.
 // doesn't support writing to the same place two different times
+//
+// will add padding the string if its smaller than the rect
+// alignments[0] position of horizontal padding
+// alignments[1] position of vertical padding
 func (f *FrameBuffer) RenderString(
 	str string,
 	rect layout.Rect,
-) {
-	var (
-		endY = (rect.Y + rect.Height) - 1
-		endX = (rect.X + rect.Width) - 1
-	)
-
-	if endX >= f.width || endY >= f.height {
-		panic(fmt.Sprintf(
-			"rect: %v went out of bounds of FrameBuffer: %v", rect, f,
-		))
-	}
-
+	alignments ...lipbalm.Position,
+) error {
 	if rect.Width <= 0 || rect.Height <= 0 {
-		return
+		return nil
 	}
 
-	// make sure that the string is exacly `rect.Width` width and `rect.Height` height
-	str = ensureSize(str, rect.Width, rect.Height)
+	// make sure that the string is expanded to `rect.Width` width and `rect.Height` height
+	str = ensureSize(str, rect.Width, rect.Height, alignments...)
 
 	lines := strings.Split(str, "\n")
 	for i, line := range lines {
+		if int(rect.Y)+i >= len(f.frame) {
+			continue
+		}
+
 		var (
 			frameLineIdx   = rect.Y + uint16(i)
 			frameLineRunes = []rune(f.frame[frameLineIdx])
 
-			// x position on the frameLine with skipped ansi codes
-			x = getWithoutAnsi(int(rect.X), f.frame[frameLineIdx])
+			// beforeX position on the frameLine with skipped ansi codes
+			beforeX = getWithoutAnsi(int(rect.X), f.frame[frameLineIdx])
+			afterX  = min(beforeX+int(rect.Width), len(frameLineRunes)-1)
 
 			// everything before the rect's x. its excluding, so x is free
-			before = string(frameLineRunes[:x])
+			before = string(frameLineRunes[:beforeX])
 			// everything after x + width
-			after = string(frameLineRunes[uint16(x)+rect.Width:])
+			after = string(frameLineRunes[afterX:])
 		)
 
 		f.frame[frameLineIdx] = before + line + after
 	}
+
+	return nil
 }
 
 func (f FrameBuffer) View() string {
