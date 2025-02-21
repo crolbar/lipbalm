@@ -96,3 +96,17 @@ func doIfp[B bool | string, T string](b B, w T, c func(s T)) {
 		}
 	}
 }
+
+func getAlignments(alignments []Position) (halignment, valignment Position) {
+	halignment = Right
+	valignment = Right
+	if len(alignments) > 0 {
+		halignment = alignments[0]
+	}
+
+	if len(alignments) > 1 {
+		valignment = alignments[1]
+	}
+
+	return halignment, valignment
+}

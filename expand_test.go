@@ -5,6 +5,27 @@ import (
 	"testing"
 )
 
+func TestExpand(t *testing.T) {
+	assert.Equal(t,
+		"          \n          \n          \n          \n          \n          \n          \n          \n          \n        hi",
+		Expand(10, 10, "hi"),
+	)
+}
+
+func TestExpand2(t *testing.T) {
+	assert.Equal(t,
+		"          \n          \n          \n          \n          \n   text   \n          \n          \n          \n          \n          ",
+		Expand(11, 10, "text", Center, Center),
+	)
+}
+
+func TestExpand3(t *testing.T) {
+	assert.Equal(t,
+		"      text\n          ",
+		Expand(2, 10, "text", Left, Bottom),
+	)
+}
+
 func TestExpandBoth(t *testing.T) {
 	s := "hi\noaeshu\naoeu"
 	assert.Equal(t,

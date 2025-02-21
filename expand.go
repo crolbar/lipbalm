@@ -5,14 +5,21 @@ import (
 	"strings"
 )
 
+func Expand(height, width int, str string, alingments ...Position) string {
+	vAlignment, hAlignment := getAlignments(alingments)
+	return ExpandHorizontal(width, hAlignment,
+		ExpandVertical(height, vAlignment, str),
+	)
+}
+
 // expands the string with adding new lines to the Position specifiend
 // Top, Bottom, Center, to reach the specified `height`
 func ExpandVertical(height int, alignment Position, str string) string {
 	if len(str) == 0 {
-		return strings.Repeat("\n", height)
+		return strings.Repeat("\n", height-1)
 	}
 
-	numLines := strings.Count(str, "\n") + iff(str[len(str)-1] == '\n', 0, 1)
+	numLines := strings.Count(str, "\n") + 1
 
 	if height < numLines {
 		return str
