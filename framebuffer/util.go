@@ -95,7 +95,7 @@ func applyPadding(
 
 // returns idx of the nth visable character in the string
 // without treating ansi codes as visable characters
-func getWithoutAnsi(n int, s string) int {
+func getWithoutAnsi(n int, s []rune) int {
 	if n == 0 {
 		return n
 	}
@@ -104,10 +104,9 @@ func getWithoutAnsi(n int, s string) int {
 		lastVisibleIdx = 0
 		visableCount   = 0
 		skiping        = false
-		runes          = []rune(s)
 	)
 
-	for i, r := range runes {
+	for i, r := range s {
 		// start ansi escape
 		if r == '\x1b' {
 			skiping = true
@@ -136,7 +135,7 @@ func getWithoutAnsi(n int, s string) int {
 			// if we have a trailing ansi sequence.
 			// not the best approach
 			// but im expeting the area after n to be empty
-			if i < len(runes)-1 && runes[i+1] == '\x1b' {
+			if i < len(s)-1 && s[i+1] == '\x1b' {
 				continue
 			}
 
@@ -159,4 +158,19 @@ func getAlignments(alignments []lipbalm.Position) (halignment, valignment lipbal
 	}
 
 	return halignment, valignment
+}
+
+func genBuffer(width, height int) [][]rune {
+	buff := make([][]rune, height)
+	line := make([]rune, height*width)
+
+	for i := range buff {
+		buff[i] = line[i*width : (i+1)*width]
+	}
+
+	for i := range line {
+		line[i] = ' '
+	}
+
+	return buff
 }

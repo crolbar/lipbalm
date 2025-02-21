@@ -9,48 +9,29 @@ import (
 type FrameBuffer struct {
 	height uint16 // height of the frame
 	width  uint16 // width of the frame
-
-	// the string that we will output
-	//
-	// []string because we store the lines
-	// and then join them on final output
-	frame []string
+	frame  [][]rune
 }
 
 func NewFrameBuffer(width, height uint16) FrameBuffer {
-	var (
-		line  = strings.Repeat(" ", int(width))
-		frame = make([]string, height)
-	)
-
-	for i := range frame {
-		frame[i] = line
-	}
-
 	return FrameBuffer{
 		height: height,
 		width:  width,
-		frame:  frame,
+		frame:  genBuffer(int(width), int(height)),
 	}
 }
 
 func (f *FrameBuffer) Resize(width, height int) {
 	f.width = uint16(width)
 	f.height = uint16(height)
-	f.Clear()
+	f.frame = genBuffer(int(width), int(height))
 }
 
 func (f *FrameBuffer) Clear() {
-	var (
-		line  = strings.Repeat(" ", int(f.width))
-		frame = make([]string, f.height)
-	)
-
-	for i := range frame {
-		frame[i] = line
+	for i := range f.frame {
+		for j := range f.frame[i] {
+			f.frame[i][j] = ' '
+		}
 	}
-
-	f.frame = frame
 }
 
 func (f FrameBuffer) Size() layout.Rect {
@@ -72,40 +53,66 @@ func (f *FrameBuffer) RenderString(
 	str string,
 	rect layout.Rect,
 	alignments ...lipbalm.Position,
-) error {
+) {
 	if rect.Width <= 0 || rect.Height <= 0 {
-		return nil
+		return
 	}
 
 	// make sure that the string is expanded to `rect.Width` width and `rect.Height` height
 	str = ensureSize(str, rect.Width, rect.Height, alignments...)
 
-	lines := strings.Split(str, "\n")
-	for i, line := range lines {
+	for i, line := range strings.Split(str, "\n") {
 		if int(rect.Y)+i >= len(f.frame) {
 			continue
 		}
 
 		var (
 			frameLineIdx   = rect.Y + uint16(i)
-			frameLineRunes = []rune(f.frame[frameLineIdx])
+			frameLineRunes = f.frame[frameLineIdx]
 
 			// beforeX position on the frameLine with skipped ansi codes
 			beforeX = getWithoutAnsi(int(rect.X), f.frame[frameLineIdx])
-			afterX  = min(beforeX+int(rect.Width), len(frameLineRunes)-1)
+			afterX  = min(beforeX+int(rect.Width), len(frameLineRunes))
 
-			// everything before the rect's x. its excluding, so x is free
-			before = string(frameLineRunes[:beforeX])
 			// everything after x + width
-			after = string(frameLineRunes[afterX:])
+			after = frameLineRunes[afterX:]
+
+			line          = []rune(line)
+			lineSize      = len(line)
+			availableSize = afterX - beforeX
 		)
 
-		f.frame[frameLineIdx] = before + line + after
-	}
+		// grow the line buffer if needed
+		if lineSize > availableSize {
+			var (
+				sizeNeeded = lineSize - availableSize
+				newLine    = make([]rune, len(f.frame[frameLineIdx])+sizeNeeded)
+			)
 
-	return nil
+			copy(newLine, f.frame[frameLineIdx])
+			f.frame[frameLineIdx] = newLine
+
+			afterX = afterX + sizeNeeded
+		}
+
+		copy(f.frame[frameLineIdx][beforeX:afterX], line)
+		copy(f.frame[frameLineIdx][afterX:], after)
+	}
 }
 
 func (f FrameBuffer) View() string {
-	return strings.Join(f.frame, "\n")
+	var sb strings.Builder
+	sb.Grow(int(f.width * f.height))
+
+	for i, row := range f.frame {
+		sb.WriteString(string(row))
+
+		if i == len(f.frame)-1 {
+			break
+		}
+
+		sb.WriteByte('\n')
+	}
+
+	return sb.String()
 }
