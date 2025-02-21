@@ -1,6 +1,18 @@
 package lipbalm
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
+
+type BorderTextPos int
+
+const (
+	btTop BorderTextPos = iota
+	btLeft
+	btRight
+	btBottom
+)
 
 // ColorFg/ColorBg:
 //
@@ -16,16 +28,81 @@ type BorderType struct {
 	BottomRight string
 	ColorFg     string
 	ColorBg     string
+	Text        string
+	TextPos     BorderTextPos
+	TextAlign   Position // only on horizontal border
+}
+
+type BorderOpts func(bt *BorderType)
+
+func WithFgColor(code uint8) BorderOpts {
+	return func(bt *BorderType) {
+		bt.ColorFg = Color(code)
+	}
+}
+
+func WithBgColor(code uint8) BorderOpts {
+	return func(bt *BorderType) {
+		bt.ColorBg = ColorBg(code)
+	}
+}
+
+func WithFgColorRGB(R, G, B uint8) BorderOpts {
+	return func(bt *BorderType) {
+		bt.ColorFg = ColorRGB(R, G, B)
+	}
+}
+
+func WithBgColorRGB(R, G, B uint8) BorderOpts {
+	return func(bt *BorderType) {
+		bt.ColorBg = ColorBgRGB(R, G, B)
+	}
+}
+
+func WithText(text string, align ...Position) BorderOpts {
+	return func(bt *BorderType) {
+		withTextHelper(bt, text, btTop, align)
+	}
+}
+
+func WithTextTop(text string, align ...Position) BorderOpts {
+	return func(bt *BorderType) {
+		withTextHelper(bt, text, btTop, align)
+	}
+}
+
+func WithTextBottom(text string, align ...Position) BorderOpts {
+	return func(bt *BorderType) {
+		withTextHelper(bt, text, btBottom, align)
+	}
+}
+
+func WithTextLeft(text string, align ...Position) BorderOpts {
+	return func(bt *BorderType) {
+		withTextHelper(bt, text, btLeft, align)
+	}
+}
+
+func WithTextRight(text string, align ...Position) BorderOpts {
+	return func(bt *BorderType) {
+		withTextHelper(bt, text, btRight, align)
+	}
+}
+
+func withTextHelper(bt *BorderType, text string, pos BorderTextPos, align []Position) {
+	bt.Text = text
+	bt.TextPos = pos
+	if len(align) > 0 {
+		bt.TextAlign = align[0]
+	}
 }
 
 // color:
 //
 //	ansi color code (use Color/ColorRGB)
 //	[0] for foreground, [1] for background
-func NormalBorder(color ...string) BorderType {
-	colorFg, colorBg := getColor(color)
-
-	return BorderType{
+func NormalBorder(opts ...BorderOpts) BorderType {
+	bt := BorderType{
 		Top:         "─",
 		Bottom:      "─",
 		Left:        "│",
@@ -34,15 +111,17 @@ func NormalBorder(color ...string) BorderType {
 		TopRight:    "┐",
 		BottomLeft:  "└",
 		BottomRight: "┘",
-		ColorFg:     colorFg,
-		ColorBg:     colorBg,
 	}
+
+	for _, o := range opts {
+		o(&bt)
+	}
+
+	return bt
 }
 
-func RoundedBorder(color ...string) BorderType {
-	colorFg, colorBg := getColor(color)
-
-	return BorderType{
+func RoundedBorder(opts ...BorderOpts) BorderType {
+	bt := BorderType{
 		Top:         "─",
 		Bottom:      "─",
 		Left:        "│",
@@ -51,44 +130,49 @@ func RoundedBorder(color ...string) BorderType {
 		TopRight:    "╮",
 		BottomLeft:  "╰",
 		BottomRight: "╯",
-		ColorFg:     colorFg,
-		ColorBg:     colorBg,
 	}
+
+	for _, o := range opts {
+		o(&bt)
+	}
+
+	return bt
 }
 
-func getColor(color []string) (fg, bg string) {
-	var (
-		colorFg = ""
-		colorBg = ""
-	)
-
-	switch len(color) {
-	case 2:
-		colorBg = color[1]
-		fallthrough
-	case 1:
-		colorFg = color[0]
-	}
-
-	return colorFg, colorBg
+func BorderN(
+	str string,
+	disabled ...bool,
+) string {
+	return Border(NormalBorder(), str, disabled...)
 }
 
-func getDisabled(disabled []bool) (top bool, right bool, bottom bool, left bool) {
-	switch len(disabled) {
-	case 4:
-		left = disabled[3]
-		fallthrough
-	case 3:
-		bottom = disabled[2]
-		fallthrough
-	case 2:
-		right = disabled[1]
-		fallthrough
-	case 1:
-		top = disabled[0]
-	}
+func BorderNF(
+	code uint8,
+	str string,
+	disabled ...bool,
+) string {
+	return Border(
+		NormalBorder(
+			WithFgColor(code),
+		), str, disabled...)
+}
 
-	return !top, !right, !bottom, !left
+func BorderR(
+	str string,
+	disabled ...bool,
+) string {
+	return Border(RoundedBorder(), str, disabled...)
+}
+
+func BorderRF(
+	code uint8,
+	str string,
+	disabled ...bool,
+) string {
+	return Border(
+		RoundedBorder(
+			WithFgColor(code),
+		), str, disabled...)
 }
 
 func Border(
@@ -107,6 +191,8 @@ func Border(
 
 		topBorder    = iff(left, b.TopLeft, "") + strings.Repeat(b.Top, width) + iff(right, b.TopRight, "")
 		bottomBorder = iff(left, b.BottomLeft, "") + strings.Repeat(b.Bottom, width) + iff(right, b.BottomRight, "")
+
+		textRunes = []rune(b.Text)
 
 		sb strings.Builder
 
@@ -139,6 +225,17 @@ func Border(
 		}
 	)
 
+	// text in bottom/top border
+	if b.Text != "" {
+		if b.TextPos == btTop {
+			topBorder = embedTextIntoBorder(topBorder, textRunes, b.TextAlign, left, right)
+		}
+
+		if b.TextPos == btBottom {
+			bottomBorder = embedTextIntoBorder(bottomBorder, textRunes, b.TextAlign, left, right)
+		}
+	}
+
 	sb.Grow(sbSize)
 
 	if top {
@@ -151,17 +248,25 @@ func Border(
 
 	for i, line := range lines {
 		if left {
-			applyColor()
-			sb.WriteString(b.Left)
-			resetColor()
+			if b.TextPos == btLeft && i < len(textRunes) {
+				sb.WriteRune(textRunes[i])
+			} else {
+				applyColor()
+				sb.WriteString(b.Left)
+				resetColor()
+			}
 		}
 
 		sb.WriteString(line)
 
 		if right {
-			applyColor()
-			sb.WriteString(b.Right)
-			resetColor()
+			if b.TextPos == btRight && i < len(textRunes) {
+				sb.WriteRune(textRunes[i])
+			} else {
+				applyColor()
+				sb.WriteString(b.Right)
+				resetColor()
+			}
 		}
 
 		if i == lastLineIdx {
@@ -180,4 +285,56 @@ func Border(
 	}
 
 	return sb.String()
+}
+
+// text into horizontal border top/bottom
+func embedTextIntoBorder(border string, textRunes []rune, align Position, left bool, right bool) string {
+	var (
+		sb    strings.Builder
+		runes = []rune(border)
+
+		off       = iff(left, 1, 0) + iff(right, 1, 0)
+		textStart = int(math.Round(
+			float64(len(runes)-off)*float64(align) - // - the two optional borders left&right
+				float64(len(textRunes))*float64(align)))
+	)
+
+	for i, r := range runes {
+		if i == 0 && left {
+			sb.WriteRune(r)
+			continue
+		}
+		if i == len(runes)-1 && right {
+			sb.WriteRune(r)
+			continue
+		}
+
+		tIdx := i - iff(left, 1, 0)
+		if tIdx >= textStart && tIdx-textStart < len(textRunes) {
+			sb.WriteRune(textRunes[tIdx-textStart])
+			continue
+		}
+
+		sb.WriteRune(r)
+	}
+
+	return sb.String()
+}
+
+func getDisabled(disabled []bool) (top bool, right bool, bottom bool, left bool) {
+	switch len(disabled) {
+	case 4:
+		left = disabled[3]
+		fallthrough
+	case 3:
+		bottom = disabled[2]
+		fallthrough
+	case 2:
+		right = disabled[1]
+		fallthrough
+	case 1:
+		top = disabled[0]
+	}
+
+	return !top, !right, !bottom, !left
 }

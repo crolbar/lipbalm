@@ -11,3 +11,5 @@
 -   [ ] ratatui like layout creation
     -   [x] write to "frame buffer"
     -   [x] split
+-   [ ] bold, underline, italic...?
+-   [x] text in border

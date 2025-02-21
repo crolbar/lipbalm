@@ -5,11 +5,26 @@ import (
 	"testing"
 )
 
+func TestBorderText(t *testing.T) {
+	s := Border(NormalBorder(WithTextTop("some", Left)), "one")
+	assert.Equal(t, "┌som┐\n│one│\n└───┘", s)
+}
+
+func TestBorderText2(t *testing.T) {
+	s := Border(NormalBorder(WithTextTop("short", Left)), "texttext")
+	assert.Equal(t, "┌short───┐\n│texttext│\n└────────┘", s)
+}
+
+func TestBorderText3(t *testing.T) {
+	s := Border(NormalBorder(WithTextBottom("center", Center)), "thisiscentered")
+	assert.Equal(t, "┌──────────────┐\n│thisiscentered│\n└────center────┘", s)
+}
+
 func TestBorderColor(t *testing.T) {
 	s := getDump("bar1_no_border")
 	assert.Equal(t,
 		"\x1b[38;5;228;48;5;27m┌─────────────┐\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m             \x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m             \x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m             \x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m             \x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m             \x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m│\x1b[0m\x1b[38;5;57m█████████████\x1b[0m\x1b[38;5;228;48;5;27m│\x1b[0m\n\x1b[38;5;228;48;5;27m└─────────────┘\x1b[0m",
-		Border(NormalBorder(Color(228), ColorBg(27)), s),
+		Border(NormalBorder(WithFgColor(228), WithBgColor(27)), s),
 	)
 
 }
@@ -18,7 +33,7 @@ func TestBorderTop(t *testing.T) {
 	s := "something\nto border\nup"
 	assert.Equal(t,
 		"\x1b[38;5;23;48;5;255m─────────\x1b[0m\nsomething\nto border\nup       ",
-		Border(NormalBorder(Color(23), ColorBg(255)), s, false, true, true, true),
+		Border(NormalBorder(WithFgColor(23), WithBgColor(255)), s, false, true, true, true),
 	)
 }
 

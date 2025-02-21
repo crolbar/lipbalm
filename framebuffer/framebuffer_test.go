@@ -53,7 +53,7 @@ func TestSplit2Color(t *testing.T) {
 
 	for i, s := range splitsA {
 		fb.RenderString(
-			lipbalm.Border(lipbalm.NormalBorder(lipbalm.Color(uint8(i+100))),
+			lipbalm.Border(lipbalm.NormalBorder(lipbalm.WithFgColor(uint8(i+100))),
 				lipbalm.ExpandVertical(int(s.Height)-2, lipbalm.Center,
 					lipbalm.ExpandHorizontal(int(s.Width)-2, lipbalm.Center,
 						lipbalm.SetColor(lipbalm.Color(9), fmt.Sprintf("%d", i))),
@@ -127,7 +127,7 @@ func TestVertHalfFB(t *testing.T) {
 			layout.NewConstrain(layout.Percent, 50),
 		).Split(fb.Size())
 
-	border := lipbalm.NormalBorder(lipbalm.Color(70))
+	border := lipbalm.NormalBorder(lipbalm.WithFgColor(70))
 
 	fb.RenderString(
 		lipbalm.Border(border,
