@@ -27,11 +27,7 @@ func (f *FrameBuffer) Resize(width, height int) {
 }
 
 func (f *FrameBuffer) Clear() {
-	for i := range f.frame {
-		for j := range f.frame[i] {
-			f.frame[i][j] = ' '
-		}
-	}
+	f.frame = genBuffer(int(f.width), int(f.height))
 }
 
 func (f FrameBuffer) Size() layout.Rect {
