@@ -97,11 +97,19 @@ func (f *FrameBuffer) RenderString(
 }
 
 func (f FrameBuffer) View() string {
-	var sb strings.Builder
-	sb.Grow(int(f.width * f.height))
+	var (
+		sb   strings.Builder
+		size = 0
+	)
+	for _, row := range f.frame {
+		size += len(row) + 1
+	}
+	sb.Grow(size)
 
 	for i, row := range f.frame {
-		sb.WriteString(string(row))
+		for _, r := range row {
+			sb.WriteRune(r)
+		}
 
 		if i == len(f.frame)-1 {
 			break

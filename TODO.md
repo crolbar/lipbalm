@@ -13,3 +13,4 @@
     -   [x] split
 -   [ ] bold, underline, italic...?
 -   [x] text in border
+-   [ ] fix alignment in framebuffer write (its not an alignment its a position of the padding...)
