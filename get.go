@@ -20,6 +20,22 @@ func GetLines(s string) (lines []string, widths []int, widest int) {
 	return lines, widths, widest
 }
 
+// returns the height of a multiline string
+func GetHeight(s string) int {
+	return strings.Count(s, "\n") + 1
+}
+
+// returns the max width of a multiline string
+func GetWidth(str string) (maxWidth int) {
+	for _, l := range strings.Split(str, "\n") {
+		if w := GetStringWidth(l); w > maxWidth {
+			maxWidth = w
+		}
+	}
+
+	return maxWidth
+}
+
 // returns the width of the strings
 // without ansi codes & chars < 32
 func GetStringWidth(s string) int {
