@@ -26,6 +26,7 @@ func ensureSize(str string, width, height uint16, alignments ...lipbalm.Position
 	// top padding
 	if len(lines) < int(height) && valignment < lipbalm.Bottom {
 		b.WriteString(strings.Repeat("\n"+paddingLine, paddingTop))
+		b.WriteByte('\n')
 	}
 
 	for i, line := range lines {
