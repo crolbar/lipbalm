@@ -43,8 +43,8 @@ func (f FrameBuffer) Size() layout.Rect {
 // doesn't support writing to the same place two different times
 //
 // will add padding the string if its smaller than the rect
-// alignments[0] position of horizontal padding
-// alignments[1] position of vertical padding
+// alignments[0] alignment of string horizontally
+// alignments[1] alignment of string vertically
 func (f *FrameBuffer) RenderString(
 	str string,
 	rect layout.Rect,
