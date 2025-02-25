@@ -1,6 +1,8 @@
 package framebuffer
 
 import (
+	"fmt"
+	"github.com/crolbar/lipbalm"
 	"github.com/crolbar/lipbalm/assert"
 	"strings"
 	"testing"
@@ -19,7 +21,7 @@ func TestGetWithoutAnsi(t *testing.T) {
 	assert.Equal(t, 20, getWithoutAnsi(9, []rune("Hello\x1b[31mWorld\x1b[31m!")))
 }
 
-func TestEnsureSize(t *testing.T) {
+func TestEnsureSizeExpand(t *testing.T) {
 	var (
 		str    = "0128347091207840712378478127384781237478912378478078aosntehu\naohuathaoeu\naoentuh\ntisheu\n83nteud"
 		width  = 50
@@ -28,6 +30,8 @@ func TestEnsureSize(t *testing.T) {
 
 	str = ensureSize(str, uint16(width), uint16(height))
 
+	fmt.Printf("%q\n", str)
+
 	lines := strings.Split(str, "\n")
 
 	assert.Equal(t, height, len(lines))
@@ -35,27 +39,37 @@ func TestEnsureSize(t *testing.T) {
 	for _, line := range lines[1:] {
 		assert.Equal(t, 50, len(line))
 	}
+}
 
-	str = ""
-	width = 34
-	height = 72
+func TestEnsureSizeExpandBottomRight(t *testing.T) {
+	var (
+		str    = ""
+		width  = 34
+		height = 72
+	)
 
-	str = ensureSize(str, uint16(width), uint16(height))
+	str = ensureSize(str, uint16(width), uint16(height), lipbalm.Right, lipbalm.Bottom)
 
-	lines = strings.Split(str, "\n")
+	fmt.Printf("%q\n", str)
+
+	lines := strings.Split(str, "\n")
 
 	assert.Equal(t, height, len(lines))
 	for _, line := range lines {
 		assert.Equal(t, width, len(line))
 	}
+}
 
-	str = "eu\nhelllaanltoheu"
-	width = 5
-	height = 1
+func TestEnsureSizeNotExpand(t *testing.T) {
+	var (
+		str    = "eu\nhelllaanltoheu"
+		width  = 5
+		height = 1
+	)
 
-	str = ensureSize(str, uint16(width), uint16(height))
+	str = ensureSize(str, uint16(width), uint16(height), lipbalm.Center, lipbalm.Top)
 
-	lines = strings.Split(str, "\n")
+	lines := strings.Split(str, "\n")
 
 	assert.Equal(t, 2, len(lines))
 	assert.Equal(t, width, len(lines[0]))

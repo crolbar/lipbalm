@@ -17,16 +17,18 @@ func ensureSize(str string, width, height uint16, alignments ...lipbalm.Position
 		paddingHeight = int(height) - len(lines)
 		paddingLine   = strings.Repeat(" ", int(width))
 		paddingSplit  = int(math.Round(float64(paddingHeight) * valignment.Value()))
-		paddingTop    = paddingHeight - paddingSplit
-		paddingBottom = paddingHeight - paddingTop
+		paddingBottom = paddingHeight - paddingSplit
+		paddingTop    = paddingHeight - paddingBottom
 
 		b strings.Builder
 	)
 
-	// top padding
-	if len(lines) < int(height) && valignment < lipbalm.Bottom {
-		b.WriteString(strings.Repeat("\n"+paddingLine, paddingTop))
-		b.WriteByte('\n')
+	// top padding, bottom alignment
+	if len(lines) < int(height) && valignment > lipbalm.Top {
+		for range paddingTop {
+			b.WriteString(paddingLine)
+			b.WriteByte('\n')
+		}
 	}
 
 	for i, line := range lines {
@@ -49,8 +51,8 @@ func ensureSize(str string, width, height uint16, alignments ...lipbalm.Position
 		b.WriteByte('\n')
 	}
 
-	// bottom padding
-	if len(lines) < int(height) && valignment > lipbalm.Top {
+	// bottom padding, top alignment
+	if len(lines) < int(height) && valignment < lipbalm.Bottom {
 		b.WriteString(strings.Repeat("\n"+paddingLine, paddingBottom))
 	}
 
@@ -69,11 +71,11 @@ func applyPadding(
 	)
 
 	switch position {
-	case lipbalm.Left:
+	case lipbalm.Right:
 		b.WriteString(padding)
 		b.WriteString(line)
 
-	case lipbalm.Right:
+	case lipbalm.Left:
 		b.WriteString(line)
 		b.WriteString(padding)
 
@@ -148,8 +150,8 @@ func getWithoutAnsi(n int, s []rune) int {
 }
 
 func getAlignments(alignments []lipbalm.Position) (halignment, valignment lipbalm.Position) {
-	halignment = lipbalm.Right
-	valignment = lipbalm.Right
+	halignment = lipbalm.Left
+	valignment = lipbalm.Top
 	if len(alignments) > 0 {
 		halignment = alignments[0]
 	}
