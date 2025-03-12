@@ -14,3 +14,4 @@
 -   [ ] bold, underline, italic...?
 -   [x] text in border
 -   [x] fix alignment in framebuffer write (its not an alignment its a position of the padding...)
+-   [ ] safety for big numbers (expand) ?
