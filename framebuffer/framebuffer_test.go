@@ -12,6 +12,54 @@ import (
 
 var l = layout.DefaultLayout()
 
+func TestM(t *testing.T) {
+	var (
+		fb = NewFrameBuffer(23, 15)
+
+		vsplits = l.Vercital().
+			Constrains(
+				layout.NewConstrain(layout.Percent, 50),
+				layout.NewConstrain(layout.Percent, 50),
+			).Split(fb.Size())
+
+		hsplits1 = l.Horizontal().
+				Constrains(
+				layout.NewConstrain(layout.Percent, 50),
+				layout.NewConstrain(layout.Percent, 50),
+			).Split(vsplits[0])
+
+		hsplits2 = l.Horizontal().
+				Constrains(
+				layout.NewConstrain(layout.Percent, 50),
+				layout.NewConstrain(layout.Percent, 50),
+			).Split(vsplits[1])
+	)
+	r := layout.Rect{
+		X:      hsplits1[0].Width / 2,
+		Y:      hsplits1[0].Height / 2,
+		Width:  hsplits1[0].Width,
+		Height: hsplits1[0].Height,
+	}
+
+	for i, s := range append(append(hsplits1, hsplits2...), r) {
+		fb.RenderString(
+			lipbalm.BorderNF(1,
+				lipbalm.Expand(int(s.Height-2), int(s.Width-2),
+					lipbalm.SetColor(lipbalm.ColorRGB(120, 0, 120),
+						lipbalm.SetColor(lipbalm.ColorBgRGB(0, 170, 170),
+							fmt.Sprintf("%d", i),
+						)),
+					lipbalm.Center, lipbalm.Center),
+			),
+			s,
+		)
+	}
+
+	fmt.Println(fb.View())
+
+	fmt.Println(fb.frame)
+}
+
 func TestSplit2Color(t *testing.T) {
 	fb := NewFrameBuffer(100, 26)
 	splitsA := make([]layout.Rect, 0)
@@ -56,7 +104,10 @@ func TestSplit2Color(t *testing.T) {
 			lipbalm.Border(lipbalm.NormalBorder(lipbalm.WithFgColor(uint8(i+100))),
 				lipbalm.ExpandVertical(int(s.Height)-2, lipbalm.Center,
 					lipbalm.ExpandHorizontal(int(s.Width)-2, lipbalm.Center,
-						lipbalm.SetColor(lipbalm.Color(9), fmt.Sprintf("%d", i))),
+						lipbalm.SetColor(lipbalm.Color(9),
+							fmt.Sprintf("%d", i),
+						),
+					),
 				)),
 			s,
 		)
