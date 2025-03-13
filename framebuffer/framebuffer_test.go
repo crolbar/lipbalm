@@ -2,15 +2,112 @@ package framebuffer
 
 import (
 	"fmt"
-	"os"
-	"testing"
-
-	"github.com/crolbar/lipbalm"
+	lb "github.com/crolbar/lipbalm"
 	"github.com/crolbar/lipbalm/assert"
 	"github.com/crolbar/lipbalm/layout"
+	"os"
+	"testing"
 )
 
 var l = layout.DefaultLayout()
+
+func TestOverlay(t *testing.T) {
+	var (
+		fb = NewFrameBuffer(50, 27)
+
+		vsplits = l.Vercital().
+			Constrains(
+				layout.NewConstrain(layout.Percent, 50),
+				layout.NewConstrain(layout.Percent, 50),
+			).Split(fb.Size())
+
+		hsplits1 = l.Horizontal().
+				Constrains(
+				layout.NewConstrain(layout.Percent, 50),
+				layout.NewConstrain(layout.Percent, 50),
+			).Split(vsplits[0])
+
+		hsplits2 = l.Horizontal().
+				Constrains(
+				layout.NewConstrain(layout.Percent, 50),
+				layout.NewConstrain(layout.Percent, 50),
+			).Split(vsplits[1])
+	)
+
+	w := uint16(float32(hsplits1[0].Width) * 0.8)
+	h := uint16(float32(hsplits1[0].Height) * 0.8)
+	r := layout.Rect{
+		X:      hsplits1[0].Width - w/2,
+		Y:      hsplits1[0].Height - h/2,
+		Width:  w,
+		Height: h,
+	}
+
+	for i, s := range append(append(hsplits1, hsplits2...), r) {
+		fb.RenderString(
+			lb.Border(lb.NormalBorder(lb.WithFgColor(1), lb.WithBgColor(101)),
+				lb.Expand(int(s.Height-2), int(s.Width-2),
+					lb.SetColor(lb.ColorRGB(120, 0, 120),
+						lb.SetColor(lb.ColorBgRGB(0, 170, 170),
+							fmt.Sprintf("%d", i),
+						)),
+					lb.Center, lb.Center),
+			),
+			s,
+		)
+	}
+
+	frame := fb.View()
+	// fmt.Println(frame)
+
+	assert.Equal(t,
+		"\x1b[38;5;1;48;5;101m┌───────────────────────┐┌───────────────────────┐\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m           \x1b[38;2;120;0;120;48;2;0;170;170m0\x1b[0m           \x1b[38;5;1;48;5;101m││\x1b[0m           \x1b[38;2;120;0;120;48;2;0;170;170m1\x1b[0m           \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m┌──────────────────┐\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m                  \x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m                  \x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m                  \x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m└──────────────│\x1b[0m                  \x1b[38;5;1;48;5;101m│──────────────┘\x1b[0m\n\x1b[38;5;1;48;5;101m┌──────────────│\x1b[0m         \x1b[38;2;120;0;120;48;2;0;170;170m4\x1b[0m        \x1b[38;5;1;48;5;101m│──────────────┐\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m                  \x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m                  \x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m                  \x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m              \x1b[38;5;1;48;5;101m└──────────────────┘\x1b[0m              \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m           \x1b[38;2;120;0;120;48;2;0;170;170m2\x1b[0m           \x1b[38;5;1;48;5;101m││\x1b[0m           \x1b[38;2;120;0;120;48;2;0;170;170m3\x1b[0m           \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m│\x1b[0m                       \x1b[38;5;1;48;5;101m││\x1b[0m                       \x1b[38;5;1;48;5;101m│\x1b[0m\n\x1b[38;5;1;48;5;101m└───────────────────────┘└───────────────────────┘\x1b[0m\n                                                  ",
+		frame,
+	)
+}
+
+func TestBgColor(t *testing.T) {
+	fb := NewFrameBuffer(20, 6)
+
+	s := l.Vercital().
+		Constrains(
+			layout.NewConstrain(layout.Length, 3),
+			layout.NewConstrain(layout.Length, 3),
+		).
+		Split(fb.Size())
+
+	fb.RenderString(
+		lb.Border(lb.NormalBorder(lb.WithBgColorRGB(70, 20, 33)),
+			lb.SetColor(
+				lb.Color(1),
+				lb.SetColor(
+					lb.ColorBg(52),
+					lb.ExpandHorizontal(20-2, lb.Right, "first, 1"),
+				),
+			),
+		),
+		s[0],
+	)
+
+	fb.RenderString(
+		lb.Border(lb.NormalBorder(lb.WithBgColorRGB(20, 0, 78)),
+			lb.SetColor(
+				lb.ColorBg(74),
+				lb.ExpandHorizontal(20-2, lb.Center, "second, 1"),
+			),
+		),
+		s[1],
+	)
+
+	frame := fb.View()
+
+	// fmt.Println(lb.BorderN(frame))
+	// fmt.Printf("%q\n", lb.BorderN(frame))
+
+	assert.Equal(t,
+		"┌────────────────────┐\n│\x1b[48;2;70;20;33m┌──────────────────┐\x1b[0m│\n│\x1b[48;2;70;20;33m│\x1b[0m\x1b[38;5;1;48;5;52m          first, 1\x1b[0m\x1b[48;2;70;20;33m│\x1b[0m│\n│\x1b[48;2;70;20;33m└──────────────────┘\x1b[0m│\n│\x1b[48;2;20;0;78m┌──────────────────┐\x1b[0m│\n│\x1b[48;2;20;0;78m│\x1b[0m\x1b[48;5;74m     second, 1    \x1b[0m\x1b[48;2;20;0;78m│\x1b[0m│\n│\x1b[48;2;20;0;78m└──────────────────┘\x1b[0m│\n└────────────────────┘",
+		lb.BorderN(frame))
+}
 
 func TestSplit2Color(t *testing.T) {
 	fb := NewFrameBuffer(100, 26)
@@ -53,10 +150,13 @@ func TestSplit2Color(t *testing.T) {
 
 	for i, s := range splitsA {
 		fb.RenderString(
-			lipbalm.Border(lipbalm.NormalBorder(lipbalm.WithFgColor(uint8(i+100))),
-				lipbalm.ExpandVertical(int(s.Height)-2, lipbalm.Center,
-					lipbalm.ExpandHorizontal(int(s.Width)-2, lipbalm.Center,
-						lipbalm.SetColor(lipbalm.Color(9), fmt.Sprintf("%d", i))),
+			lb.Border(lb.NormalBorder(lb.WithFgColor(uint8(i+100))),
+				lb.ExpandVertical(int(s.Height)-2, lb.Center,
+					lb.ExpandHorizontal(int(s.Width)-2, lb.Center,
+						lb.SetColor(lb.Color(9),
+							fmt.Sprintf("%d", i),
+						),
+					),
 				)),
 			s,
 		)
@@ -105,9 +205,9 @@ func TestSplits1(t *testing.T) {
 
 	for _, s := range splitsA {
 		fb.RenderString(
-			lipbalm.Border(lipbalm.NormalBorder(),
-				lipbalm.ExpandVertical(int(s.Height)-2, lipbalm.Bottom,
-					lipbalm.ExpandHorizontal(int(s.Width)-2, lipbalm.Bottom, ""),
+			lb.Border(lb.NormalBorder(),
+				lb.ExpandVertical(int(s.Height)-2, lb.Bottom,
+					lb.ExpandHorizontal(int(s.Width)-2, lb.Bottom, ""),
 				)),
 			s,
 		)
@@ -127,20 +227,20 @@ func TestVertHalfFB(t *testing.T) {
 			layout.NewConstrain(layout.Percent, 50),
 		).Split(fb.Size())
 
-	border := lipbalm.NormalBorder(lipbalm.WithFgColor(70))
+	border := lb.NormalBorder(lb.WithFgColor(70))
 
 	fb.RenderString(
-		lipbalm.Border(border,
-			lipbalm.ExpandVertical(int(splits[0].Height)-2, lipbalm.Bottom,
-				lipbalm.ExpandHorizontal(int(splits[0].Width)-2, lipbalm.Bottom, ""),
+		lb.Border(border,
+			lb.ExpandVertical(int(splits[0].Height)-2, lb.Bottom,
+				lb.ExpandHorizontal(int(splits[0].Width)-2, lb.Bottom, ""),
 			)),
 		splits[0],
 	)
 
 	fb.RenderString(
-		lipbalm.Border(border,
-			lipbalm.ExpandVertical(int(splits[1].Height)-2, lipbalm.Bottom,
-				lipbalm.ExpandHorizontal(int(splits[1].Width)-2, lipbalm.Bottom, ""),
+		lb.Border(border,
+			lb.ExpandVertical(int(splits[1].Height)-2, lb.Bottom,
+				lb.ExpandHorizontal(int(splits[1].Width)-2, lb.Bottom, ""),
 			)),
 		splits[1],
 	)
@@ -150,8 +250,8 @@ func TestVertHalfFB(t *testing.T) {
 	// fmt.Println(frame)
 
 	assert.Equal(t,
-		"┌──────────────────────────────────────────────────┐\n│\x1b[38;5;70m┌───────────────────────┐\x1b[0m\x1b[38;5;70m┌───────────────────────┐\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m└───────────────────────┘\x1b[0m\x1b[38;5;70m└───────────────────────┘\x1b[0m│\n└──────────────────────────────────────────────────┘",
-		lipbalm.Border(lipbalm.NormalBorder(), frame),
+		"┌──────────────────────────────────────────────────┐\n│\x1b[38;5;70m┌───────────────────────┐┌───────────────────────┐\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m│\x1b[0m                       \x1b[38;5;70m││\x1b[0m                       \x1b[38;5;70m│\x1b[0m│\n│\x1b[38;5;70m└───────────────────────┘└───────────────────────┘\x1b[0m│\n└──────────────────────────────────────────────────┘",
+		lb.Border(lb.NormalBorder(), frame),
 	)
 }
 

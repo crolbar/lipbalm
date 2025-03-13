@@ -9,7 +9,34 @@ import (
 type FrameBuffer struct {
 	height uint16 // height of the frame
 	width  uint16 // width of the frame
-	frame  [][]rune
+	frame  [][]cell
+}
+
+type colorMode uint8
+
+const (
+	noColor colorMode = iota
+	fg256
+	fgTC
+	bg256
+	bgTC
+)
+
+const ansi_reset string = "\x1b[0m"
+
+type color struct {
+	mode colorMode
+
+	// 0 => 256 color / true color R
+	// 1 => true color G
+	// 2 => true color B
+	vals [3]uint8
+}
+
+type cell struct {
+	rune rune
+	fg   color
+	bg   color
 }
 
 func NewFrameBuffer(width, height uint16) FrameBuffer {
@@ -39,18 +66,16 @@ func (f FrameBuffer) Size() layout.Rect {
 	}
 }
 
-// write a string to the specified rect of the framebuffer.
-// doesn't support writing to the same place two different times
-//
-// will add padding the string if its smaller than the rect
-// alignments[0] alignment of string horizontally
-// alignments[1] alignment of string vertically
 func (f *FrameBuffer) RenderString(
 	str string,
 	rect layout.Rect,
 	alignments ...lipbalm.Position,
 ) {
-	if rect.Width <= 0 || rect.Height <= 0 {
+	if rect.Width <= 0 ||
+		rect.Height <= 0 ||
+		rect.Y >= f.height ||
+		rect.X >= f.width ||
+		rect.X+rect.Width > f.width {
 		return
 	}
 
@@ -58,41 +83,16 @@ func (f *FrameBuffer) RenderString(
 	str = ensureSize(str, rect.Width, rect.Height, alignments...)
 
 	for i, line := range strings.Split(str, "\n") {
-		if int(rect.Y)+i >= len(f.frame) {
-			continue
+		frameLineIdx := rect.Y + uint16(i)
+
+		if frameLineIdx >= f.height {
+			break
 		}
 
-		var (
-			frameLineIdx   = rect.Y + uint16(i)
-			frameLineRunes = f.frame[frameLineIdx]
-
-			// beforeX position on the frameLine with skipped ansi codes
-			beforeX = getWithoutAnsi(int(rect.X), f.frame[frameLineIdx])
-			afterX  = min(beforeX+int(rect.Width), len(frameLineRunes))
-
-			// everything after x + width
-			after = frameLineRunes[afterX:]
-
-			line          = []rune(line)
-			lineSize      = len(line)
-			availableSize = afterX - beforeX
+		copy(
+			f.frame[frameLineIdx][rect.X:rect.X+rect.Width],
+			convertLineToCells([]rune(line), rect.Width),
 		)
-
-		// grow the line buffer if needed
-		if lineSize > availableSize {
-			var (
-				sizeNeeded = lineSize - availableSize
-				newLine    = make([]rune, len(f.frame[frameLineIdx])+sizeNeeded)
-			)
-
-			copy(newLine, f.frame[frameLineIdx])
-			f.frame[frameLineIdx] = newLine
-
-			afterX = afterX + sizeNeeded
-		}
-
-		copy(f.frame[frameLineIdx][beforeX:afterX], line)
-		copy(f.frame[frameLineIdx][afterX:], after)
 	}
 }
 
@@ -107,9 +107,38 @@ func (f FrameBuffer) View() string {
 	sb.Grow(size)
 
 	for i, row := range f.frame {
-		for _, r := range row {
-			sb.WriteRune(r)
+		var (
+			curBgColor color = emptyColor
+			curFgColor color = emptyColor
+
+			resetAppliedColor = func() {
+				if curBgColor.mode != noColor || curFgColor.mode != noColor {
+					sb.WriteString(ansi_reset)
+				}
+			}
+
+			handleColorChange = func(c cell) {
+				// if there was a prev color applied, reset it
+				resetAppliedColor()
+
+				curBgColor = c.bg
+				curFgColor = c.fg
+
+				writeColor(&sb, curFgColor, curBgColor)
+			}
+		)
+
+		for _, cell := range row {
+			// if there is a change in color
+			if curBgColor != cell.bg || curFgColor != cell.fg {
+				handleColorChange(cell)
+			}
+
+			sb.WriteRune(cell.rune)
 		}
+
+		// reset applied color if there is one
+		resetAppliedColor()
 
 		if i == len(f.frame)-1 {
 			break

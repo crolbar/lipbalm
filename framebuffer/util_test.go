@@ -1,25 +1,11 @@
 package framebuffer
 
 import (
-	"fmt"
 	"github.com/crolbar/lipbalm"
 	"github.com/crolbar/lipbalm/assert"
 	"strings"
 	"testing"
 )
-
-func TestGetWithoutAnsi(t *testing.T) {
-	assert.Equal(t, 3, getWithoutAnsi(3, []rune("Hello")))
-	assert.Equal(t, 8, getWithoutAnsi(3, []rune("\x1b[31mHello")))
-	// counts in the trailing escape sequence
-	assert.Equal(t, 10, getWithoutAnsi(4, []rune("01234\x1b[31m56789")))
-	assert.Equal(t, 12, getWithoutAnsi(7, []rune("Hello\x1b[31m, World")))
-	assert.Equal(t, 4, getWithoutAnsi(4, []rune("Hello\x1b[31m")))
-	assert.Equal(t, 10, getWithoutAnsi(4, []rune("Hello\x1b[31m5")))
-	assert.Equal(t, 0, getWithoutAnsi(1, []rune("\x1b[31m")))
-	assert.Equal(t, 14, getWithoutAnsi(9, []rune("Hello\x1b[31mWorld\x1b[31m")))
-	assert.Equal(t, 20, getWithoutAnsi(9, []rune("Hello\x1b[31mWorld\x1b[31m!")))
-}
 
 func TestEnsureSizeExpand(t *testing.T) {
 	var (
@@ -30,7 +16,7 @@ func TestEnsureSizeExpand(t *testing.T) {
 
 	str = ensureSize(str, uint16(width), uint16(height))
 
-	fmt.Printf("%q\n", str)
+	// fmt.Printf("%q\n", str)
 
 	lines := strings.Split(str, "\n")
 
@@ -50,7 +36,7 @@ func TestEnsureSizeExpandBottomRight(t *testing.T) {
 
 	str = ensureSize(str, uint16(width), uint16(height), lipbalm.Right, lipbalm.Bottom)
 
-	fmt.Printf("%q\n", str)
+	// fmt.Printf("%q\n", str)
 
 	lines := strings.Split(str, "\n")
 

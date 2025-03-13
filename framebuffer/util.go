@@ -96,59 +96,6 @@ func applyPadding(
 
 }
 
-// returns idx of the nth visable character in the string
-// without treating ansi codes as visable characters
-func getWithoutAnsi(n int, s []rune) int {
-	if n == 0 {
-		return n
-	}
-
-	var (
-		lastVisibleIdx = 0
-		visableCount   = 0
-		skiping        = false
-	)
-
-	for i, r := range s {
-		// start ansi escape
-		if r == '\x1b' {
-			skiping = true
-			continue
-		}
-
-		// continue/stop ansi escape
-		if skiping {
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-				skiping = false
-			}
-			continue
-		}
-
-		// other invisible ascii chars
-		if r < 32 || r == 127 {
-			continue
-		}
-
-		visableCount++
-		lastVisibleIdx = i
-
-		// visableCount start with 1,
-		// and n is an index so it start with 0, so n+1
-		if visableCount >= n+1 {
-			// if we have a trailing ansi sequence.
-			// not the best approach
-			// but im expeting the area after n to be empty
-			if i < len(s)-1 && s[i+1] == '\x1b' {
-				continue
-			}
-
-			return i
-		}
-	}
-
-	return lastVisibleIdx
-}
-
 func getAlignments(alignments []lipbalm.Position) (halignment, valignment lipbalm.Position) {
 	halignment = lipbalm.Left
 	valignment = lipbalm.Top
@@ -163,17 +110,168 @@ func getAlignments(alignments []lipbalm.Position) (halignment, valignment lipbal
 	return halignment, valignment
 }
 
-func genBuffer(width, height int) [][]rune {
-	buff := make([][]rune, height)
-	line := make([]rune, height*width)
+var emptyColor = color{}
+var emptyCell = cell{' ', emptyColor, emptyColor}
+
+func genBuffer(width, height int) [][]cell {
+	buff := make([][]cell, height)
+	line := make([]cell, height*width)
 
 	for i := range buff {
 		buff[i] = line[i*width : (i+1)*width]
 	}
 
 	for i := range line {
-		line[i] = ' '
+		line[i] = emptyCell
 	}
 
 	return buff
+}
+
+func writeColor(sb *strings.Builder, fg color, bg color) {
+	var (
+		bgStr = ""
+		fgStr = ""
+	)
+
+	switch bg.mode {
+	case bg256:
+		bgStr = lipbalm.ColorBg(bg.vals[0])
+	case bgTC:
+		bgStr = lipbalm.ColorBgRGB(
+			bg.vals[0],
+			bg.vals[1],
+			bg.vals[2],
+		)
+	}
+
+	switch fg.mode {
+	case fg256:
+		fgStr = lipbalm.Color(fg.vals[0])
+	case fgTC:
+		fgStr = lipbalm.ColorRGB(
+			fg.vals[0],
+			fg.vals[1],
+			fg.vals[2],
+		)
+	}
+
+	if bgStr == "" {
+		sb.WriteString(fgStr)
+		return
+	}
+	if fgStr == "" {
+		sb.WriteString(bgStr)
+		return
+	}
+
+	sb.WriteString(fgStr[:len(fgStr)-1] + ";" + bgStr[2:])
+}
+
+func strToUint8(s string) (u uint8) {
+	for _, c := range s {
+		u = u*10 + uint8(c-'0')
+	}
+
+	return
+}
+
+// string(ansi code) -> color
+func parseAnsi(ansi []rune) (fg color, bg color) {
+	ansi = ansi[2:]
+
+	var (
+		codes = strings.Split(string(ansi), ";")
+		i     = 0
+	)
+
+	for i < len(codes) {
+		var (
+			code = codes[i]
+
+			cur *color = nil
+		)
+
+		// fg/bg
+		switch code {
+		case "38": // fg
+			cur = &fg
+			cur.mode = fg256
+		case "48": // bg
+			cur = &bg
+			cur.mode = bg256
+		}
+
+		if cur == nil {
+			break
+		}
+
+		i++
+		// color type
+		switch codes[i] {
+		case "5": // 256
+			i++
+			cur.vals[0] = strToUint8(codes[i])
+			i++
+		case "2": // tc
+			cur.mode++
+
+			i++
+			for j := range 3 {
+				cur.vals[j] = strToUint8(codes[i])
+				i++
+			}
+		}
+	}
+
+	return
+}
+
+// []rune -> []cell
+// with ansi codes extracted for each rune
+func convertLineToCells(line []rune, width uint16) []cell {
+	var (
+		cells = make([]cell, width)
+		j     = 0
+
+		ansiStartIdx = -1
+
+		fgcolor color
+		bgcolor color
+	)
+
+	for i, r := range line {
+		// line (without ansi) is longer that the rect's width
+		if j >= int(width) {
+			break
+		}
+
+		// start ansi escape
+		if r == '\x1b' {
+			ansiStartIdx = i
+			continue
+		}
+
+		if ansiStartIdx >= 0 {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+				fgcolor, bgcolor = parseAnsi(line[ansiStartIdx:i])
+				ansiStartIdx = -1
+			}
+			continue
+		}
+
+		// other invisible ascii chars
+		if r < 32 || r == 127 {
+			continue
+		}
+
+		cells[j] = cell{
+			rune: r,
+			fg:   fgcolor,
+			bg:   bgcolor,
+		}
+		j++
+	}
+
+	return cells
 }
