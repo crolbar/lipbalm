@@ -15,11 +15,14 @@ type FrameBuffer struct {
 type colorMode uint8
 
 const (
-	fg256 colorMode = iota + 1
+	noColor colorMode = iota
+	fg256
 	fgTC
 	bg256
 	bgTC
 )
+
+const ansi_reset string = "\x1b[0m"
 
 type color struct {
 	mode colorMode
@@ -93,8 +96,6 @@ func (f *FrameBuffer) RenderString(
 	}
 }
 
-const ansi_reset string = "\x1b[0m"
-
 func (f FrameBuffer) View() string {
 	var (
 		sb   strings.Builder
@@ -106,32 +107,38 @@ func (f FrameBuffer) View() string {
 	sb.Grow(size)
 
 	for i, row := range f.frame {
-		for _, r := range row {
-			// switch r.bg.mode {
-			// case bg256:
-			// 	sb.WriteString(lipbalm.ColorBg(r.bg.vals[0]))
-			// case bgTC:
-			// 	sb.WriteString(lipbalm.ColorBgRGB(
-			// 		r.bg.vals[0],
-			// 		r.bg.vals[1],
-			// 		r.bg.vals[2],
-			// 	))
-			// }
-			// switch r.fg.mode {
-			// case fg256:
-			// 	sb.WriteString(lipbalm.Color(r.fg.vals[0]))
-			// case fgTC:
-			// 	sb.WriteString(lipbalm.ColorRGB(
-			// 		r.fg.vals[0],
-			// 		r.fg.vals[1],
-			// 		r.fg.vals[2],
-			// 	))
-			// }
+		var (
+			curBgColor color = emptyColor
+			curFgColor color = emptyColor
 
-			sb.WriteRune(r.rune)
+			resetAppliedColor = func() {
+				if curBgColor.mode != noColor || curFgColor.mode != noColor {
+					sb.WriteString(ansi_reset)
+				}
+			}
 
-			// sb.WriteString(ansi_reset)
+			handleColorChange = func(c cell) {
+				// if there was a prev color applied, reset it
+				resetAppliedColor()
+
+				curBgColor = c.bg
+				curFgColor = c.fg
+
+				writeColor(&sb, curFgColor, curBgColor)
+			}
+		)
+
+		for _, cell := range row {
+			// if there is a change in color
+			if curBgColor != cell.bg || curFgColor != cell.fg {
+				handleColorChange(cell)
+			}
+
+			sb.WriteRune(cell.rune)
 		}
+
+		// reset applied color if there is one
+		resetAppliedColor()
 
 		if i == len(f.frame)-1 {
 			break

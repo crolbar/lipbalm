@@ -128,6 +128,46 @@ func genBuffer(width, height int) [][]cell {
 	return buff
 }
 
+func writeColor(sb *strings.Builder, fg color, bg color) {
+	var (
+		bgStr = ""
+		fgStr = ""
+	)
+
+	switch bg.mode {
+	case bg256:
+		bgStr = lipbalm.ColorBg(bg.vals[0])
+	case bgTC:
+		bgStr = lipbalm.ColorBgRGB(
+			bg.vals[0],
+			bg.vals[1],
+			bg.vals[2],
+		)
+	}
+
+	switch fg.mode {
+	case fg256:
+		fgStr = lipbalm.Color(fg.vals[0])
+	case fgTC:
+		fgStr = lipbalm.ColorRGB(
+			fg.vals[0],
+			fg.vals[1],
+			fg.vals[2],
+		)
+	}
+
+	if bgStr == "" {
+		sb.WriteString(fgStr)
+		return
+	}
+	if fgStr == "" {
+		sb.WriteString(bgStr)
+		return
+	}
+
+	sb.WriteString(fgStr[:len(fgStr)-1] + ";" + bgStr[2:])
+}
+
 func strToUint8(s string) (u uint8) {
 	for _, c := range s {
 		u = u*10 + uint8(c-'0')

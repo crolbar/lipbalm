@@ -1,7 +1,6 @@
 package framebuffer
 
 import (
-	"fmt"
 	"github.com/crolbar/lipbalm"
 	"github.com/crolbar/lipbalm/assert"
 	"strings"
@@ -17,7 +16,7 @@ func TestEnsureSizeExpand(t *testing.T) {
 
 	str = ensureSize(str, uint16(width), uint16(height))
 
-	fmt.Printf("%q\n", str)
+	// fmt.Printf("%q\n", str)
 
 	lines := strings.Split(str, "\n")
 
@@ -37,7 +36,7 @@ func TestEnsureSizeExpandBottomRight(t *testing.T) {
 
 	str = ensureSize(str, uint16(width), uint16(height), lipbalm.Right, lipbalm.Bottom)
 
-	fmt.Printf("%q\n", str)
+	// fmt.Printf("%q\n", str)
 
 	lines := strings.Split(str, "\n")
 
