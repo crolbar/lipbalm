@@ -22,13 +22,19 @@ package textInput
 
 import (
 	lb "github.com/crolbar/lipbalm"
+	lbl "github.com/crolbar/lipbalm/layout"
 	"strings"
 )
 
 type TextInput struct {
-	Height    int
-	Width     int
-	Title     string
+	Title string
+
+	// height, width and Rect count in the border
+	// uses Height & Width if both non zero else uses Rect for size
+	Height int
+	Width  int
+	Rect   lbl.Rect
+
 	Text      *strings.Builder
 	CursorPos int
 
@@ -99,23 +105,44 @@ func WithCursorColor(color string) Opts {
 	}
 }
 
+var DefaultTextInput = TextInput{
+	Text:         &strings.Builder{},
+	FocusedColor: lb.Color(54),
+	VAlignment:   lb.Top,
+	HAlignment:   lb.Left,
+	CursorColor:  lb.ColorBg(1),
+}
+
 func NewTextInput(
 	title string,
 	width int,
 	height int,
 	opts ...Opts,
 ) TextInput {
-	ti := TextInput{
-		Title:        title,
-		Text:         &strings.Builder{},
-		Height:       height,
-		Width:        width,
-		Border:       lb.NormalBorder(lb.WithTextTop(title, lb.Left)),
-		FocusedColor: lb.Color(54),
-		VAlignment:   lb.Top,
-		HAlignment:   lb.Left,
-		CursorColor:  lb.ColorBg(1),
+	ti := DefaultTextInput
+
+	ti.Title = title
+	ti.Height = height
+	ti.Width = width
+	ti.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
+
+	for _, o := range opts {
+		o(&ti)
 	}
+
+	return ti
+}
+
+func NewTextInputR(
+	title string,
+	rect lbl.Rect,
+	opts ...Opts,
+) TextInput {
+	ti := DefaultTextInput
+
+	ti.Title = title
+	ti.Rect = rect
+	ti.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
 
 	for _, o := range opts {
 		o(&ti)
@@ -312,6 +339,9 @@ func (ti TextInput) View() string {
 		preCursorText  = text[:pos]
 		postCursorText = text[min(pos+1, len(text)):]
 		cursorChar     = " "
+
+		h = ti.GetHeight()
+		w = ti.GetWidth()
 	)
 
 	// if cursor is on char in text
@@ -333,7 +363,12 @@ func (ti TextInput) View() string {
 		text = lb.SetColor(ti.FocusedColor, text)
 	}
 
-	out := lb.Expand(int(ti.Height), int(ti.Width),
+	if ti.HasBorder {
+		h -= 2
+		w -= 2
+	}
+
+	out := lb.Expand(h, w,
 		text,
 		ti.VAlignment, ti.HAlignment,
 	)
@@ -346,6 +381,26 @@ func (ti TextInput) View() string {
 	}
 
 	return out
+}
+
+func (ti *TextInput) GetRect() lbl.Rect {
+	return ti.Rect
+}
+
+func (ti *TextInput) GetHeight() int {
+	if ti.Height == 0 {
+		return int(ti.Rect.Height)
+	}
+
+	return ti.Height
+}
+
+func (ti *TextInput) GetWidth() int {
+	if ti.Width == 0 {
+		return int(ti.Rect.Width)
+	}
+
+	return ti.Width
 }
 
 func (ti *TextInput) HasFocus() bool {

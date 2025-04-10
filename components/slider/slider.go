@@ -64,7 +64,7 @@ type Slider struct {
 	Progress     uint8
 	ProgressRate uint8
 
-	// height, width and Rect don't count in the border
+	// height, width and Rect count in the border
 	// uses Height & Width if both non zero else uses Rect for size
 	Height int
 	Width  int
@@ -261,18 +261,22 @@ func (s *Slider) CheckMouseCollision(
 		h  = int(rect.Height)
 	)
 
-	// skip border
-	// width does not count the border
-	if s.HasBorder {
-		rx += 1
-		ry += 1
-	}
+	if mx >= rx && mx <= rx+w-1 && my >= ry && my <= ry+h-1 {
+		if s.HasBorder {
+			// no click on border
+			if mx == rx || my == ry || mx == rx+w-1 || my == ry+h-1 {
+				return false, 0
+			}
 
-	// do this now so i don't have to put - 1 everywhere
-	h -= 1
-	w -= 1
+			if mx == rx+1 || my == ry+1 {
+				return true, 0
+			}
 
-	if mx >= rx && mx <= rx+w && my >= ry && my <= ry+h {
+			// skip border for ratio calc
+			h -= 2
+			w -= 2
+		}
+
 		var ratio uint8
 		if s.Vertical {
 			ratio = uint8(255.0 * (float64(my-ry) / float64(h)))
@@ -333,15 +337,18 @@ func (s Slider) View() string {
 	var (
 		sb  strings.Builder
 		end = s.GetHeight()
-		w = s.GetWidth()
+		w   = s.GetWidth()
 
 		progress = s.GetRatio()
 
 		fullBar  string
 		emptyBar string
-
-		endIdx = end - 1
 	)
+
+	if s.HasBorder {
+		end -= 2
+		w -= 2
+	}
 
 	if s.Vertical {
 		fullBar = strings.Repeat("█", w)
@@ -398,7 +405,7 @@ func (s Slider) View() string {
 			}
 		}
 
-		if i == endIdx {
+		if i == end-1 {
 			break
 		}
 
@@ -462,29 +469,6 @@ func (s *Slider) GetWidth() int {
 	}
 
 	return s.Width
-}
-
-// returns the Rect but with added border to its width & height
-// if has Border
-func (s *Slider) Size() lbl.Rect {
-	rect := s.Rect
-
-	if s.HasBorder {
-		if !s.NoBottomBorder {
-			rect.Height++
-		}
-		if !s.NoTopBorder {
-			rect.Height++
-		}
-		if !s.NoRightBorder {
-			rect.Width++
-		}
-		if !s.NoLeftBorder {
-			rect.Width++
-		}
-	}
-
-	return rect
 }
 
 func (s *Slider) HasFocus() bool {

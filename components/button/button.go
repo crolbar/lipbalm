@@ -9,7 +9,7 @@ type Button struct {
 	// title used in the border
 	Title string
 
-	// height, width and Rect don't count in the border
+	// height, width and Rect count in the border
 	// uses Height & Width if both non zero else uses Rect for size
 	Width  int
 	Height int
@@ -182,6 +182,9 @@ func (b Button) View() string {
 	var (
 		text   = b.Text
 		border = b.Border
+
+		h = b.GetHeight()
+		w = b.GetWidth()
 	)
 
 	if b.Pressed {
@@ -198,9 +201,14 @@ func (b Button) View() string {
 		}
 	}
 
-	out := lb.Expand(b.GetHeight(), b.GetWidth(),
-		text,
-		b.VAlignment, b.HAlignment)
+	// h and w are used for expantion of the internal box in the border
+	// since width & height include the border exclude in from the box exapantion
+	if b.HasBorder {
+		h -= 2
+		w -= 2
+	}
+
+	out := lb.Expand(h, w, text, b.VAlignment, b.HAlignment)
 
 	if !b.HasBorder && b.focus && has(b.FocusedColor) {
 		out = lb.SetColor(b.FocusedColor, out)
@@ -233,7 +241,7 @@ func has(s string) bool {
 	return s != ""
 }
 
-func (b *Button) GetRect() lbl.Rect {
+func (b *Button) Size() lbl.Rect {
 	return b.Rect
 }
 
@@ -251,29 +259,6 @@ func (b *Button) GetWidth() int {
 	}
 
 	return b.Width
-}
-
-// returns the Rect but with added border to its width & height
-// if has Border
-func (b *Button) Size() lbl.Rect {
-	rect := b.Rect
-
-	if b.HasBorder {
-		if !b.NoBottomBorder {
-			rect.Height++
-		}
-		if !b.NoTopBorder {
-			rect.Height++
-		}
-		if !b.NoRightBorder {
-			rect.Width++
-		}
-		if !b.NoLeftBorder {
-			rect.Width++
-		}
-	}
-
-	return rect
 }
 
 func (b *Button) Press() {
