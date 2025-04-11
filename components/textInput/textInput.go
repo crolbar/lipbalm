@@ -179,7 +179,7 @@ func (ti *TextInput) Update(key string) error {
 		ti.DeleteAfterCursor()
 	case "alt+delete":
 		ti.DeleteWordAfterCursor()
-	case "ctrl+backspace", "ctrl+w":
+	case "ctrl+backspace", "ctrl+w", "ctrl+h":
 		ti.DeleteWordBeforeCursor()
 	}
 
