@@ -241,7 +241,7 @@ func has(s string) bool {
 	return s != ""
 }
 
-func (b *Button) Size() lbl.Rect {
+func (b *Button) GetRect() lbl.Rect {
 	return b.Rect
 }
 
