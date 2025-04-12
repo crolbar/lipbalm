@@ -268,7 +268,11 @@ func (s *Slider) CheckMouseCollision(
 				return false, 0
 			}
 
-			if mx == rx+1 || my == ry+1 {
+			// if click in start
+			if !s.Vertical && mx == rx+1 {
+				return true, 0
+			}
+			if s.Vertical && my == ry+1 {
 				return true, 0
 			}
 
