@@ -183,8 +183,9 @@ func WithNoLeftBorder() Opts {
 }
 
 var DefaultSlider Slider = Slider{
-	FocusedColor:   lb.Color(57),
-	UnfocusedColor: lb.Color(245),
+	FocusedColor:   lb.Color(54),
+	ProgressColor:  lb.Color(54),
+	UnfocusedColor: lb.Color(15),
 	Progress:       0,
 	ProgressRate:   5,
 }
