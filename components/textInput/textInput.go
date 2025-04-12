@@ -384,6 +384,12 @@ func (ti TextInput) View() string {
 	return out
 }
 
+func (ti *TextInput) SetText(text string) {
+	ti.Text.Reset()
+	ti.Text.WriteString(text)
+	ti.CursorPos = max(0, min(ti.Text.Len(), ti.CursorPos))
+}
+
 func (ti *TextInput) GetRect() lbl.Rect {
 	return ti.Rect
 }
