@@ -21,9 +21,11 @@ package textInput
 // with the text that's aligned based on VAlignment and HAlignment
 
 import (
+	"strconv"
+	"strings"
+
 	lb "github.com/crolbar/lipbalm"
 	lbl "github.com/crolbar/lipbalm/layout"
-	"strings"
 )
 
 type TextInput struct {
@@ -424,4 +426,20 @@ func (ti *TextInput) DeFocus() {
 
 func (ti *TextInput) GetText() string {
 	return ti.Text.String()
+}
+
+func (ti *TextInput) GetTextAsInt() (int, error) {
+	num, err := strconv.ParseInt(ti.Text.String(), 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return int(num), nil
+}
+
+func (ti *TextInput) GetTextAsFloat() (float64, error) {
+	num, err := strconv.ParseFloat(ti.Text.String(), 64)
+	if err != nil {
+		return 0, err
+	}
+	return num, nil
 }
