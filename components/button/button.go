@@ -134,6 +134,12 @@ func WithHAlignment(alignment lb.Position) Opts {
 	}
 }
 
+func WithInitState(pressed bool) Opts {
+	return func(b *Button) {
+		b.Pressed = pressed
+	}
+}
+
 var DefaultButton = Button{
 	FocusedColor:   lb.Color(54),
 	PressedBgColor: lb.ColorBg(54),
