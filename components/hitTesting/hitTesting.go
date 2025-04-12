@@ -51,6 +51,10 @@ func (ht *HitTesting) AppendRect(c func(any)) {
 func (ht HitTesting) CheckHit(x, y int, rects []lbl.Rect) {
 	for i := 0; i < len(ht.HitTriggers); i++ {
 		if HitTest(x, y, rects[i]) {
+			if ht.HitTriggers[i] == nil {
+				continue
+			}
+
 			ht.HitTriggers[i](ht.Argument)
 			break
 		}
