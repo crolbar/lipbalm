@@ -106,7 +106,6 @@ func WithCursorColor(color string) Opts {
 }
 
 var DefaultTextInput = TextInput{
-	Text:         &strings.Builder{},
 	FocusedColor: lb.Color(54),
 	VAlignment:   lb.Top,
 	HAlignment:   lb.Left,
@@ -121,6 +120,7 @@ func NewTextInput(
 ) TextInput {
 	ti := DefaultTextInput
 
+	ti.Text = &strings.Builder{}
 	ti.Title = title
 	ti.Height = height
 	ti.Width = width
@@ -140,6 +140,7 @@ func NewTextInputR(
 ) TextInput {
 	ti := DefaultTextInput
 
+	ti.Text = &strings.Builder{}
 	ti.Title = title
 	ti.Rect = rect
 	ti.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
