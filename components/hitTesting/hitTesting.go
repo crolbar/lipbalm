@@ -4,8 +4,10 @@ package hitTesting
 
 import lbl "github.com/crolbar/lipbalm/layout"
 
+type HitTriggerType func(any) error
+
 type HitTesting struct {
-	HitTriggers []func(any)
+	HitTriggers []HitTriggerType
 
 	// arg passed to the func on hit
 	Argument any
@@ -23,12 +25,12 @@ var (
 // size = number of triggers = number of rectangles
 func InitHT(size int) HitTesting {
 	return HitTesting{
-		HitTriggers: make([]func(any), size),
+		HitTriggers: make([]HitTriggerType, size),
 	}
 }
 func InitHTA(size int, arg any) HitTesting {
 	return HitTesting{
-		HitTriggers: make([]func(any), size),
+		HitTriggers: make([]HitTriggerType, size),
 		Argument:    arg,
 	}
 }
@@ -37,28 +39,28 @@ func InitHTA(size int, arg any) HitTesting {
 //
 // make sure i is equal to the idx of rectangle (in the rects
 // list you give in CheckHit) you want to map this trigger to.
-func (ht *HitTesting) SetTrigger(i int, c func(any)) {
+func (ht *HitTesting) SetTrigger(i int, c HitTriggerType) {
 	ht.HitTriggers[i] = c
 }
 
 // appends a trigger to the end of hit triggers
 // THIS WILL GROW THE SIZE! USE SetTrigger IF YOU DON'T WANT THAT
-func (ht *HitTesting) AppendRect(c func(any)) {
+func (ht *HitTesting) AppendRect(c HitTriggerType) {
 	ht.HitTriggers = append(ht.HitTriggers, c)
 }
 
 // check up until it find a hit
-func (ht HitTesting) CheckHit(x, y int, rects []lbl.Rect) {
+func (ht HitTesting) CheckHit(x, y int, rects []lbl.Rect) error {
 	for i := 0; i < len(ht.HitTriggers); i++ {
 		if HitTest(x, y, rects[i]) {
 			if ht.HitTriggers[i] == nil {
 				continue
 			}
 
-			ht.HitTriggers[i](ht.Argument)
-			break
+			return ht.HitTriggers[i](ht.Argument)
 		}
 	}
+	return nil
 }
 
 func HitTest(x, y int, box lbl.Rect) bool {
