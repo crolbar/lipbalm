@@ -155,16 +155,16 @@ func NewTextInputR(
 }
 
 // pressed key from the tea.KeyMsg.String() type
-func (ti *TextInput) Update(key string) error {
+func (ti *TextInput) Update(key string) (change bool, err error) {
 	if !ti.focus {
-		return nil
+		return
 	}
-	var err error
 
 	// char / symbol
 	if len(key) == 1 {
-		ti.InsertText(rune(key[0]))
-		return err
+		err = ti.InsertText(rune(key[0]))
+		change = true
+		return
 	}
 
 	switch key {
@@ -178,15 +178,19 @@ func (ti *TextInput) Update(key string) error {
 		ti.MoveCursorRightWord()
 	case "backspace":
 		ti.DeleteBeforeCursor()
+		change = true
 	case "delete":
 		ti.DeleteAfterCursor()
+		change = true
 	case "alt+delete":
 		ti.DeleteWordAfterCursor()
+		change = true
 	case "ctrl+backspace", "ctrl+w", "ctrl+h":
 		ti.DeleteWordBeforeCursor()
+		change = true
 	}
 
-	return err
+	return
 }
 
 func (ti *TextInput) InsertText(ch rune) (err error) {

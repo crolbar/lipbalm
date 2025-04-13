@@ -45,6 +45,8 @@ type Button struct {
 	focus bool
 }
 
+var PressKeys []string = []string{" "}
+
 type Opts func(*Button)
 
 func WithBorder(border ...lb.BorderType) Opts {
@@ -184,6 +186,19 @@ func NewButtonR(
 	return b
 }
 
+func (b *Button) Update(key string) (change bool, err error) {
+	if !b.focus {
+		return
+	}
+
+	switch {
+	case matchKey(key, PressKeys):
+		b.Press()
+		change = true
+	}
+	return
+}
+
 func (b Button) View() string {
 	var (
 		text   = b.Text
@@ -241,6 +256,15 @@ func (b Button) View() string {
 	}
 
 	return out
+}
+
+func matchKey(key string, keys []string) bool {
+	for _, k := range keys {
+		if key == k {
+			return true
+		}
+	}
+	return false
 }
 
 func has(s string) bool {

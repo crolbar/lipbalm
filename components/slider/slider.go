@@ -227,9 +227,9 @@ func NewSliderR(
 	return s
 }
 
-func (s *Slider) Update(key string) error {
+func (s *Slider) Update(key string) (change bool, err error) {
 	if !s.focus {
-		return nil
+		return
 	}
 	var (
 		incKeys = IncreaseKeys
@@ -244,10 +244,12 @@ func (s *Slider) Update(key string) error {
 	switch {
 	case matchKey(key, decKeys):
 		s.DecreaseProgress()
+		change = true
 	case matchKey(key, incKeys):
 		s.IncreaseProgress()
+		change = true
 	}
-	return nil
+	return
 }
 
 func (s *Slider) CheckMouseCollision(
