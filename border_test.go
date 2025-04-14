@@ -1,13 +1,32 @@
 package lipbalm
 
 import (
+	"fmt"
 	"github.com/crolbar/lipbalm/assert"
 	"testing"
 )
 
-func TestBorderText(t *testing.T) {
+func TestBorderTextColor(t *testing.T) {
+	text := fmt.Sprintf("%s%s%s%s%s",
+		SetColor(Color(1), "1"),
+		SetColor(Color(2), "2"),
+		SetColor(Color(3), "3"),
+		SetColor(Color(4), "4"),
+		SetColor(Color(5), "5"),
+	)
+
+	s := Border(NormalBorder(
+		WithTextTop(text, Center),
+		WithBgColor(109),
+		WithFgColor(124),
+	), SetColor(Color(23), "onetwothree"))
+
+	assert.Equal(t, "\x1b[38;5;124;48;5;109m┌───\x1b[0m\x1b[38;5;1m1\x1b[0m\x1b[38;5;2m2\x1b[0m\x1b[38;5;3m3\x1b[0m\x1b[38;5;4m4\x1b[0m\x1b[38;5;5m5\x1b[0m\x1b[38;5;124;48;5;109m───┐\x1b[0m\n\x1b[38;5;124;48;5;109m│\x1b[0m\x1b[38;5;23monetwothree\x1b[0m\x1b[38;5;124;48;5;109m│\x1b[0m\n\x1b[38;5;124;48;5;109m└───────────┘\x1b[0m", s)
+}
+
+func TestBorderLongText(t *testing.T) {
 	s := Border(NormalBorder(WithTextTop("some", Left)), "one")
-	assert.Equal(t, "┌som┐\n│one│\n└───┘", s)
+	assert.Equal(t, "┌───┐\n│one│\n└───┘", s)
 }
 
 func TestBorderText2(t *testing.T) {

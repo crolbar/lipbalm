@@ -28,7 +28,7 @@ type BorderType struct {
 	BottomRight string
 	ColorFg     string
 	ColorBg     string
-	Text        string
+	Text        string // shown only if it can fit in the border, if it is longer it is ignored
 	TextPos     BorderTextPos
 	TextAlign   Position // only on horizontal border
 }
@@ -226,14 +226,14 @@ func Border(
 		}
 	)
 
-	// text in bottom/top border
-	if b.Text != "" {
+	// text in bottom/top border & the text fit in the border
+	if b.Text != "" && textWidth <= width {
 		if b.TextPos == btTop {
-			topBorder = embedTextIntoBorder(topBorder, textRunes, textWidth, b.TextAlign, left, right)
+			topBorder = embedTextIntoBorder(b, topBorder, textRunes, textWidth, left, right)
 		}
 
 		if b.TextPos == btBottom {
-			bottomBorder = embedTextIntoBorder(bottomBorder, textRunes, textWidth, b.TextAlign, left, right)
+			bottomBorder = embedTextIntoBorder(b, bottomBorder, textRunes, textWidth, left, right)
 		}
 	}
 
@@ -290,39 +290,111 @@ func Border(
 
 // text into horizontal border top/bottom
 func embedTextIntoBorder(
+	b BorderType,
 	border string,
 	textRunes []rune,
 	textWidth int,
-	align Position,
 	left bool,
 	right bool,
 ) string {
 	var (
-		sb    strings.Builder
-		runes = []rune(border)
+		sb          strings.Builder
+		borderRunes = []rune(border)
+		align       = b.TextAlign
 
 		off       = iff(left, 1, 0) + iff(right, 1, 0)
 		textStart = int(math.Round(
-			float64(len(runes)-off)*float64(align) - // - the two optional borders left&right
+			float64(len(borderRunes)-off)*float64(align) - // - the two optional borders left&right
 				float64(textWidth)*float64(align)))
+
+		textAnsiOff  = 0
+		writeOutAnsi = func(tIdx int, textRune rune) {
+			for textRune != 'm' {
+				sb.WriteRune(textRune)
+				textAnsiOff++
+				textRune = textRunes[tIdx-textStart+textAnsiOff]
+			}
+
+			// write the 'm'
+			sb.WriteRune(textRune)
+		}
 	)
 
-	for i, r := range runes {
+	for i, r := range borderRunes {
+		// left border corner
 		if i == 0 && left {
 			sb.WriteRune(r)
 			continue
 		}
-		if i == len(runes)-1 && right {
+		// right border corner
+		if i == len(borderRunes)-1 && right {
 			sb.WriteRune(r)
 			continue
 		}
 
+		// text
 		tIdx := i - iff(left, 1, 0)
 		if tIdx >= textStart && tIdx-textStart < textWidth {
-			sb.WriteRune(textRunes[tIdx-textStart])
+			// if start of tetx & border has color, reset it
+			if tIdx == textStart && (b.ColorFg != "" || b.ColorBg != "") {
+				sb.WriteString(ansi_reset)
+			}
+
+			textRune := textRunes[tIdx-textStart+textAnsiOff]
+
+			// if text has ansi codes write them out first
+			if textRune == rune(ansi_esc) {
+				writeOutAnsi(tIdx, textRune)
+				textAnsiOff++
+				textRune = textRunes[tIdx-textStart+textAnsiOff]
+			}
+
+			sb.WriteRune(textRune)
+
+			// if text has ansi codes at the end write them out
+			if tIdx-textStart+textAnsiOff < len(textRunes)-1 {
+				// next rune
+				textRune = textRunes[tIdx-textStart+textAnsiOff+1]
+				if textRune == rune(ansi_esc) {
+					// increase because of the +1
+					textAnsiOff++
+
+					writeOutAnsi(tIdx, textRune)
+				}
+			}
+
+			// set border color back
+			{
+				// if we are not an the end of the text
+				if tIdx-textStart != textWidth-1 {
+					continue
+				}
+				// if we don't have a right border & we are at the end of the border
+				// we don't have to apply the border color again
+				if i == len(borderRunes)-1 && !right {
+					continue
+				}
+
+				// if we are at the end of the text and
+				// if border has color make sure we don't reset it
+				if b.ColorBg != "" && b.ColorFg != "" {
+					sb.WriteString(
+						b.ColorFg[:len(b.ColorFg)-1] + ";" +
+							b.ColorBg[2:])
+				} else {
+					if b.ColorFg != "" {
+						sb.WriteString(b.ColorFg)
+					}
+					if b.ColorBg != "" {
+						sb.WriteString(b.ColorBg)
+					}
+				}
+			}
+
 			continue
 		}
 
+		// border char
 		sb.WriteRune(r)
 	}
 
