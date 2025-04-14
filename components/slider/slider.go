@@ -472,6 +472,10 @@ func (s *Slider) GetRect() lbl.Rect {
 	return s.Rect
 }
 
+func (s *Slider) SetRect(r lbl.Rect) {
+	s.Rect = r
+}
+
 func (s *Slider) GetHeight() int {
 	if s.Height == 0 {
 		return int(s.Rect.Height)

@@ -15,4 +15,5 @@ type Component interface {
 	DeFocus()
 
 	GetRect() lbl.Rect
+	SetRect(lbl.Rect)
 }

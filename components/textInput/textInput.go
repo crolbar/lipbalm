@@ -438,6 +438,10 @@ func (ti *TextInput) GetRect() lbl.Rect {
 	return ti.Rect
 }
 
+func (ti *TextInput) SetRect(r lbl.Rect) {
+	ti.Rect = r
+}
+
 func (ti *TextInput) GetHeight() int {
 	if ti.Height == 0 {
 		return int(ti.Rect.Height)

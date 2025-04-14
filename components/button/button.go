@@ -278,6 +278,10 @@ func (b *Button) GetRect() lbl.Rect {
 	return b.Rect
 }
 
+func (b *Button) SetRect(r lbl.Rect) {
+	b.Rect = r
+}
+
 func (b *Button) GetHeight() int {
 	if b.Height == 0 {
 		return int(b.Rect.Height)
