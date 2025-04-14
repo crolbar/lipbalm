@@ -519,3 +519,7 @@ func (s *Slider) GetTrigger() func(any) error {
 func (s *Slider) SetTriggerArgument(a any) {
 	s.TriggerArgument = a
 }
+
+func (s *Slider) GetTriggerArgument() any {
+	return s.TriggerArgument
+}

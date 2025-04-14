@@ -486,6 +486,10 @@ func (ti *TextInput) SetTriggerArgument(a any) {
 	ti.TriggerArgument = a
 }
 
+func (ti *TextInput) GetTriggerArgument() any {
+	return ti.TriggerArgument
+}
+
 func (ti *TextInput) GetText() string {
 	return ti.Text.String()
 }

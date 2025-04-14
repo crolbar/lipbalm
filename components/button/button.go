@@ -341,3 +341,7 @@ func (b *Button) GetTrigger() func(any) error {
 func (b *Button) SetTriggerArgument(a any) {
 	b.TriggerArgument = a
 }
+
+func (b *Button) GetTriggerArgument() any {
+	return b.TriggerArgument
+}

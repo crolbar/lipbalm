@@ -12,8 +12,8 @@ type HitTriggerType func(any) error
 type HitTesting struct {
 	HitTriggers []HitTriggerType
 
-	// arg passed to the func on hit
-	Argument any
+	// args passed to the func on hit
+	TriggerArguments []any
 }
 
 // offset the rect from the side to make the hit area smaller
@@ -28,13 +28,8 @@ var (
 // size = number of triggers = number of rectangles
 func InitHT(size int) HitTesting {
 	return HitTesting{
-		HitTriggers: make([]HitTriggerType, size),
-	}
-}
-func InitHTA(size int, arg any) HitTesting {
-	return HitTesting{
-		HitTriggers: make([]HitTriggerType, size),
-		Argument:    arg,
+		HitTriggers:      make([]HitTriggerType, size),
+		TriggerArguments: make([]any, size),
 	}
 }
 
@@ -44,6 +39,19 @@ func InitHTA(size int, arg any) HitTesting {
 // list you give in CheckHit) you want to map this trigger to.
 func (ht *HitTesting) SetTrigger(i int, c HitTriggerType) {
 	ht.HitTriggers[i] = c
+}
+func (ht *HitTesting) SetTriggerArgument(i int, a any) {
+	ht.TriggerArguments[i] = a
+}
+
+func (ht *HitTesting) SetTriggerA(i int, c HitTriggerType, a any) {
+	ht.HitTriggers[i] = c
+	ht.TriggerArguments[i] = a
+}
+
+func (ht *HitTesting) SetTriggerFromComponent(i int, t lbc.Trigger) {
+	ht.HitTriggers[i] = t.GetTrigger()
+	ht.TriggerArguments[i] = t.GetTriggerArgument()
 }
 
 // appends a trigger to the end of hit triggers
@@ -60,7 +68,7 @@ func (ht HitTesting) CheckHit(x, y int, rects []lbl.Rect) error {
 				continue
 			}
 
-			return ht.HitTriggers[i](ht.Argument)
+			return ht.HitTriggers[i](ht.TriggerArguments[i])
 		}
 	}
 	return nil
@@ -73,7 +81,7 @@ func (ht HitTesting) CheckHitOnComponents(x, y int, comps []lbc.Component) error
 				continue
 			}
 
-			return ht.HitTriggers[i](ht.Argument)
+			return ht.HitTriggers[i](ht.TriggerArguments[i])
 		}
 	}
 	return nil
