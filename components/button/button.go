@@ -53,11 +53,22 @@ var PressKeys []string = []string{" "}
 
 type Opts func(*Button)
 
+// the first optional item would be used as the border
 func WithBorder(border ...lb.BorderType) Opts {
 	return func(b *Button) {
 		b.HasBorder = true
 		if len(border) > 0 {
 			b.Border = border[0]
+		}
+	}
+}
+
+// first item in arg would be used as the argument to the trigger
+func WithTrigger(t func(any) error, arg ...any) Opts {
+	return func(b *Button) {
+		b.Trigger = t
+		if len(arg) > 0 {
+			b.TriggerArgument = arg[0]
 		}
 	}
 }

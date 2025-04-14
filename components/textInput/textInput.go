@@ -70,11 +70,22 @@ type TextInput struct {
 
 type Opts func(*TextInput)
 
+// the first optional item would be used as the border
 func WithBorder(border ...lb.BorderType) Opts {
 	return func(ti *TextInput) {
 		ti.HasBorder = true
 		if len(border) > 0 {
 			ti.Border = border[0]
+		}
+	}
+}
+
+// first item in arg would be used as the argument to the trigger
+func WithTrigger(t func(any) error, arg ...any) Opts {
+	return func(ti *TextInput) {
+		ti.Trigger = t
+		if len(arg) > 0 {
+			ti.TriggerArgument = arg[0]
 		}
 	}
 }

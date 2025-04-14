@@ -111,11 +111,22 @@ var MouseKeys []string = []string{
 
 type Opts func(*Slider)
 
+// the first optional item would be used as the border
 func WithBorder(border ...lb.BorderType) Opts {
 	return func(s *Slider) {
 		s.HasBorder = true
 		if len(border) > 0 {
 			s.Border = border[0]
+		}
+	}
+}
+
+// first item in arg would be used as the argument to the trigger
+func WithTrigger(t func(any) error, arg ...any) Opts {
+	return func(s *Slider) {
+		s.Trigger = t
+		if len(arg) > 0 {
+			s.TriggerArgument = arg[0]
 		}
 	}
 }
