@@ -2,7 +2,10 @@ package hitTesting
 
 // minimal hit-testing package
 
-import lbl "github.com/crolbar/lipbalm/layout"
+import (
+	lbc "github.com/crolbar/lipbalm/components"
+	lbl "github.com/crolbar/lipbalm/layout"
+)
 
 type HitTriggerType func(any) error
 
@@ -53,6 +56,19 @@ func (ht *HitTesting) AppendRect(c HitTriggerType) {
 func (ht HitTesting) CheckHit(x, y int, rects []lbl.Rect) error {
 	for i := 0; i < len(ht.HitTriggers); i++ {
 		if HitTest(x, y, rects[i]) {
+			if ht.HitTriggers[i] == nil {
+				continue
+			}
+
+			return ht.HitTriggers[i](ht.Argument)
+		}
+	}
+	return nil
+}
+
+func (ht HitTesting) CheckHitOnComponents(x, y int, comps []lbc.Component) error {
+	for i := 0; i < len(ht.HitTriggers); i++ {
+		if HitTest(x, y, comps[i].GetRect()) {
 			if ht.HitTriggers[i] == nil {
 				continue
 			}
