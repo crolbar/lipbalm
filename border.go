@@ -193,6 +193,7 @@ func Border(
 		bottomBorder = iff(left, b.BottomLeft, "") + strings.Repeat(b.Bottom, width) + iff(right, b.BottomRight, "")
 
 		textRunes = []rune(b.Text)
+		textWidth = GetWidth(b.Text)
 
 		sb strings.Builder
 
@@ -228,11 +229,11 @@ func Border(
 	// text in bottom/top border
 	if b.Text != "" {
 		if b.TextPos == btTop {
-			topBorder = embedTextIntoBorder(topBorder, textRunes, b.TextAlign, left, right)
+			topBorder = embedTextIntoBorder(topBorder, textRunes, textWidth, b.TextAlign, left, right)
 		}
 
 		if b.TextPos == btBottom {
-			bottomBorder = embedTextIntoBorder(bottomBorder, textRunes, b.TextAlign, left, right)
+			bottomBorder = embedTextIntoBorder(bottomBorder, textRunes, textWidth, b.TextAlign, left, right)
 		}
 	}
 
@@ -248,7 +249,7 @@ func Border(
 
 	for i, line := range lines {
 		if left {
-			if b.TextPos == btLeft && i < len(textRunes) {
+			if b.TextPos == btLeft && i < textWidth {
 				sb.WriteRune(textRunes[i])
 			} else {
 				applyColor()
@@ -260,7 +261,7 @@ func Border(
 		sb.WriteString(line)
 
 		if right {
-			if b.TextPos == btRight && i < len(textRunes) {
+			if b.TextPos == btRight && i < textWidth {
 				sb.WriteRune(textRunes[i])
 			} else {
 				applyColor()
@@ -288,7 +289,14 @@ func Border(
 }
 
 // text into horizontal border top/bottom
-func embedTextIntoBorder(border string, textRunes []rune, align Position, left bool, right bool) string {
+func embedTextIntoBorder(
+	border string,
+	textRunes []rune,
+	textWidth int,
+	align Position,
+	left bool,
+	right bool,
+) string {
 	var (
 		sb    strings.Builder
 		runes = []rune(border)
@@ -296,7 +304,7 @@ func embedTextIntoBorder(border string, textRunes []rune, align Position, left b
 		off       = iff(left, 1, 0) + iff(right, 1, 0)
 		textStart = int(math.Round(
 			float64(len(runes)-off)*float64(align) - // - the two optional borders left&right
-				float64(len(textRunes))*float64(align)))
+				float64(textWidth)*float64(align)))
 	)
 
 	for i, r := range runes {
@@ -310,7 +318,7 @@ func embedTextIntoBorder(border string, textRunes []rune, align Position, left b
 		}
 
 		tIdx := i - iff(left, 1, 0)
-		if tIdx >= textStart && tIdx-textStart < len(textRunes) {
+		if tIdx >= textStart && tIdx-textStart < textWidth {
 			sb.WriteRune(textRunes[tIdx-textStart])
 			continue
 		}
