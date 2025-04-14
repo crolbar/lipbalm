@@ -173,7 +173,7 @@ var DefaultButton = Button{
 func Init(
 	title string,
 	opts ...Opts,
-) Button {
+) *Button {
 	b := DefaultButton
 	b.Title = title
 	b.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
@@ -182,7 +182,7 @@ func Init(
 		o(&b)
 	}
 
-	return b
+	return &b
 }
 
 func (b *Button) Update(key string) (change bool, err error) {

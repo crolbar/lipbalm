@@ -167,7 +167,7 @@ var DefaultTextInput = TextInput{
 func Init(
 	title string,
 	opts ...Opts,
-) TextInput {
+) *TextInput {
 	ti := DefaultTextInput
 	ti.Text = &strings.Builder{}
 	ti.Title = title
@@ -177,7 +177,7 @@ func Init(
 		o(&ti)
 	}
 
-	return ti
+	return &ti
 }
 
 // pressed key from the tea.KeyMsg.String() type

@@ -208,7 +208,7 @@ var DefaultSlider Slider = Slider{
 func Init(
 	title string,
 	opts ...Opts,
-) Slider {
+) *Slider {
 	s := DefaultSlider
 	s.Title = title
 	s.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
@@ -217,7 +217,7 @@ func Init(
 		o(&s)
 	}
 
-	return s
+	return &s
 }
 
 func (s *Slider) Update(key string) (change bool, err error) {
