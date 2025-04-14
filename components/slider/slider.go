@@ -60,6 +60,10 @@ type Slider struct {
 	// set to _RATIO to display the ratio in the border
 	Title string
 
+	// called when Update updates the progress
+	Trigger         func(any) error
+	TriggerArgument any
+
 	// 0 for 0% and 255 for 100%
 	Progress     uint8
 	ProgressRate uint8
@@ -90,7 +94,7 @@ type Slider struct {
 	// or when we have border
 	ProgressColor string
 
-	focus bool
+	Focused bool
 }
 
 var DecreaseKeys []string = []string{
@@ -124,7 +128,7 @@ func WithInitProgress(progress uint8) Opts {
 
 func WithFocus() Opts {
 	return func(s *Slider) {
-		s.focus = true
+		s.Focused = true
 	}
 }
 
@@ -190,34 +194,12 @@ var DefaultSlider Slider = Slider{
 	ProgressRate:   5,
 }
 
-func NewSlider(
+func Init(
 	title string,
-	width int,
-	height int,
 	opts ...Opts,
 ) Slider {
 	s := DefaultSlider
 	s.Title = title
-	s.Height = height
-	s.Width = width
-	s.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
-
-	for _, o := range opts {
-		o(&s)
-	}
-
-	return s
-}
-
-// pass Rect
-func NewSliderR(
-	title string,
-	rect lbl.Rect,
-	opts ...Opts,
-) Slider {
-	s := DefaultSlider
-	s.Title = title
-	s.Rect = rect
 	s.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
 
 	for _, o := range opts {
@@ -228,12 +210,19 @@ func NewSliderR(
 }
 
 func (s *Slider) Update(key string) (change bool, err error) {
-	if !s.focus {
+	if !s.Focused {
 		return
 	}
 	var (
 		incKeys = IncreaseKeys
 		decKeys = DecreaseKeys
+
+		onChange = func() {
+			if s.Trigger != nil {
+				s.Trigger(s.TriggerArgument)
+			}
+			change = true
+		}
 	)
 
 	if s.Vertical != s.Reverse {
@@ -244,9 +233,40 @@ func (s *Slider) Update(key string) (change bool, err error) {
 	switch {
 	case matchKey(key, decKeys):
 		s.DecreaseProgress()
-		change = true
+		onChange()
 	case matchKey(key, incKeys):
 		s.IncreaseProgress()
+		onChange()
+	}
+	return
+}
+
+func (s *Slider) UpdateMouseClick(
+	key string,
+	mx int,
+	my int,
+	rect lbl.Rect,
+) (change bool) {
+	if !s.Focused {
+		return
+	}
+
+	hasCollision, ratioInRect := s.CheckMouseCollision(mx, my, rect)
+	if !hasCollision {
+		return
+	}
+
+	switch {
+	case matchKey(key, MouseKeys):
+		if s.Reverse {
+			s.Progress = 255 - ratioInRect
+		} else {
+			s.Progress = ratioInRect
+		}
+
+		if s.Trigger != nil {
+			s.Trigger(s.TriggerArgument)
+		}
 		change = true
 	}
 	return
@@ -297,31 +317,6 @@ func (s *Slider) CheckMouseCollision(
 	return false, 0
 }
 
-func (s *Slider) UpdateMouseClick(
-	key string,
-	mx int,
-	my int,
-	rect lbl.Rect,
-) {
-	if !s.focus {
-		return
-	}
-
-	hasCollision, ratioInRect := s.CheckMouseCollision(mx, my, rect)
-	if !hasCollision {
-		return
-	}
-
-	switch {
-	case matchKey(key, MouseKeys):
-		if s.Reverse {
-			s.Progress = 255 - ratioInRect
-			break
-		}
-		s.Progress = ratioInRect
-	}
-}
-
 func (s *Slider) IncreaseProgress() {
 	if int(s.Progress)+int(s.ProgressRate) >= 255 {
 		s.Progress = 255
@@ -367,11 +362,11 @@ func (s Slider) View() string {
 	}
 
 	if !s.HasBorder {
-		if s.focus && s.FocusedColor != "" {
+		if s.Focused && s.FocusedColor != "" {
 			fullBar = lb.SetColor(s.FocusedColor, fullBar)
 		}
 
-		if !s.focus && s.UnfocusedColor != "" {
+		if !s.Focused && s.UnfocusedColor != "" {
 			fullBar = lb.SetColor(s.UnfocusedColor, fullBar)
 		}
 
@@ -428,10 +423,10 @@ func (s Slider) View() string {
 			s.Border.Text = s.Title
 		}
 
-		if s.focus && s.FocusedColor != "" {
+		if s.Focused && s.FocusedColor != "" {
 			s.Border.ColorFg = s.FocusedColor
 		}
-		if !s.focus && s.UnfocusedColor != "" {
+		if !s.Focused && s.UnfocusedColor != "" {
 			s.Border.ColorFg = s.UnfocusedColor
 		}
 
@@ -458,6 +453,10 @@ func (s *Slider) GetRatio() float64 {
 	return float64(s.Progress) / 255.0
 }
 
+func (s *Slider) SetRatio(ratio float64) {
+	s.Progress = uint8(255.0 * ratio)
+}
+
 func (s *Slider) GetRect() lbl.Rect {
 	return s.Rect
 }
@@ -479,21 +478,29 @@ func (s *Slider) GetWidth() int {
 }
 
 func (s *Slider) HasFocus() bool {
-	return s.focus
+	return s.Focused
 }
 
-func (s *Slider) Focused() bool {
-	return s.focus
-}
-
-func (s *Slider) SetRatio(ratio uint8) {
-	s.Progress = ratio
+func (s *Slider) FocusToggle() {
+	s.Focused = !s.Focused
 }
 
 func (s *Slider) Focus() {
-	s.focus = true
+	s.Focused = true
 }
 
 func (s *Slider) DeFocus() {
-	s.focus = false
+	s.Focused = false
+}
+
+func (s *Slider) SetTrigger(t func(any) error) {
+	s.Trigger = t
+}
+
+func (s *Slider) GetTrigger() func(any) error {
+	return s.Trigger
+}
+
+func (s *Slider) SetTriggerArgument(a any) {
+	s.TriggerArgument = a
 }

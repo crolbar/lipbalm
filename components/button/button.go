@@ -9,6 +9,10 @@ type Button struct {
 	// title used in the border
 	Title string
 
+	// called when Update updates Pressed
+	Trigger         func(any) error
+	TriggerArgument any
+
 	// height, width and Rect count in the border
 	// uses Height & Width if both non zero else uses Rect for size
 	Width  int
@@ -42,7 +46,7 @@ type Button struct {
 	NoBottomBorder bool
 	NoLeftBorder   bool
 
-	focus bool
+	Focused bool
 }
 
 var PressKeys []string = []string{" "}
@@ -55,6 +59,18 @@ func WithBorder(border ...lb.BorderType) Opts {
 		if len(border) > 0 {
 			b.Border = border[0]
 		}
+	}
+}
+
+func WithInitState(pressed bool) Opts {
+	return func(b *Button) {
+		b.Pressed = pressed
+	}
+}
+
+func WithFocus() Opts {
+	return func(b *Button) {
+		b.Focused = true
 	}
 }
 
@@ -136,12 +152,6 @@ func WithHAlignment(alignment lb.Position) Opts {
 	}
 }
 
-func WithInitState(pressed bool) Opts {
-	return func(b *Button) {
-		b.Pressed = pressed
-	}
-}
-
 var DefaultButton = Button{
 	FocusedColor:   lb.Color(54),
 	PressedBgColor: lb.ColorBg(54),
@@ -149,34 +159,12 @@ var DefaultButton = Button{
 	HAlignment:     lb.Center,
 }
 
-func NewButton(
+func Init(
 	title string,
-	width int,
-	height int,
 	opts ...Opts,
 ) Button {
 	b := DefaultButton
 	b.Title = title
-	b.Height = height
-	b.Width = width
-	b.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
-
-	for _, o := range opts {
-		o(&b)
-	}
-
-	return b
-}
-
-// pass Rect
-func NewButtonR(
-	title string,
-	rect lbl.Rect,
-	opts ...Opts,
-) Button {
-	b := DefaultButton
-	b.Title = title
-	b.Rect = rect
 	b.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
 
 	for _, o := range opts {
@@ -187,13 +175,17 @@ func NewButtonR(
 }
 
 func (b *Button) Update(key string) (change bool, err error) {
-	if !b.focus {
+	if !b.Focused {
 		return
 	}
 
 	switch {
 	case matchKey(key, PressKeys):
 		b.Press()
+
+		if b.Trigger != nil {
+			err = b.Trigger(b.TriggerArgument)
+		}
 		change = true
 	}
 	return
@@ -231,7 +223,7 @@ func (b Button) View() string {
 
 	out := lb.Expand(h, w, text, b.VAlignment, b.HAlignment)
 
-	if !b.HasBorder && b.focus && has(b.FocusedColor) {
+	if !b.HasBorder && b.Focused && has(b.FocusedColor) {
 		out = lb.SetColor(b.FocusedColor, out)
 	}
 
@@ -244,7 +236,7 @@ func (b Button) View() string {
 	}
 
 	if b.HasBorder {
-		if b.focus && has(b.FocusedColor) {
+		if b.Focused && has(b.FocusedColor) {
 			border.ColorFg = b.FocusedColor
 		}
 
@@ -308,17 +300,29 @@ func (b *Button) IsPressed() bool {
 }
 
 func (b *Button) HasFocus() bool {
-	return b.focus
+	return b.Focused
 }
 
 func (b *Button) FocusToggle() {
-	b.focus = !b.focus
+	b.Focused = !b.Focused
 }
 
 func (b *Button) Focus() {
-	b.focus = true
+	b.Focused = true
 }
 
 func (b *Button) DeFocus() {
-	b.focus = false
+	b.Focused = false
+}
+
+func (b *Button) SetTrigger(t func(any) error) {
+	b.Trigger = t
+}
+
+func (b *Button) GetTrigger() func(any) error {
+	return b.Trigger
+}
+
+func (b *Button) SetTriggerArgument(a any) {
+	b.TriggerArgument = a
 }

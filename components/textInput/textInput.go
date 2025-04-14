@@ -31,6 +31,10 @@ import (
 type TextInput struct {
 	Title string
 
+	// called when Update updates the Text
+	Trigger         func(any) error
+	TriggerArgument any
+
 	// height, width and Rect count in the border
 	// uses Height & Width if both non zero else uses Rect for size
 	Height int
@@ -56,7 +60,12 @@ type TextInput struct {
 	// fg color wont be visable
 	CursorColor string
 
-	focus bool
+	NoTopBorder    bool
+	NoRightBorder  bool
+	NoBottomBorder bool
+	NoLeftBorder   bool
+
+	Focused bool
 }
 
 type Opts func(*TextInput)
@@ -67,6 +76,12 @@ func WithBorder(border ...lb.BorderType) Opts {
 		if len(border) > 0 {
 			ti.Border = border[0]
 		}
+	}
+}
+
+func WithFocus() Opts {
+	return func(ti *TextInput) {
+		ti.Focused = true
 	}
 }
 
@@ -83,18 +98,6 @@ func WithFocusedColor(color string) Opts {
 	}
 }
 
-func WithVAlignment(alignment lb.Position) Opts {
-	return func(ti *TextInput) {
-		ti.VAlignment = alignment
-	}
-}
-
-func WithHAlignment(alignment lb.Position) Opts {
-	return func(ti *TextInput) {
-		ti.HAlignment = alignment
-	}
-}
-
 func WithTextColor(color string) Opts {
 	return func(ti *TextInput) {
 		ti.TextColor = color
@@ -107,6 +110,42 @@ func WithCursorColor(color string) Opts {
 	}
 }
 
+func WithNoTopBorder() Opts {
+	return func(ti *TextInput) {
+		ti.NoTopBorder = true
+	}
+}
+
+func WithNoRightBorder() Opts {
+	return func(ti *TextInput) {
+		ti.NoRightBorder = true
+	}
+}
+
+func WithNoBottomBorder() Opts {
+	return func(ti *TextInput) {
+		ti.NoBottomBorder = true
+	}
+}
+
+func WithNoLeftBorder() Opts {
+	return func(ti *TextInput) {
+		ti.NoLeftBorder = true
+	}
+}
+
+func WithVAlignment(alignment lb.Position) Opts {
+	return func(ti *TextInput) {
+		ti.VAlignment = alignment
+	}
+}
+
+func WithHAlignment(alignment lb.Position) Opts {
+	return func(ti *TextInput) {
+		ti.HAlignment = alignment
+	}
+}
+
 var DefaultTextInput = TextInput{
 	FocusedColor: lb.Color(54),
 	VAlignment:   lb.Top,
@@ -114,37 +153,13 @@ var DefaultTextInput = TextInput{
 	CursorColor:  lb.ColorBg(1),
 }
 
-func NewTextInput(
+func Init(
 	title string,
-	width int,
-	height int,
 	opts ...Opts,
 ) TextInput {
 	ti := DefaultTextInput
-
 	ti.Text = &strings.Builder{}
 	ti.Title = title
-	ti.Height = height
-	ti.Width = width
-	ti.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
-
-	for _, o := range opts {
-		o(&ti)
-	}
-
-	return ti
-}
-
-func NewTextInputR(
-	title string,
-	rect lbl.Rect,
-	opts ...Opts,
-) TextInput {
-	ti := DefaultTextInput
-
-	ti.Text = &strings.Builder{}
-	ti.Title = title
-	ti.Rect = rect
 	ti.Border = lb.NormalBorder(lb.WithTextTop(title, lb.Left))
 
 	for _, o := range opts {
@@ -156,14 +171,21 @@ func NewTextInputR(
 
 // pressed key from the tea.KeyMsg.String() type
 func (ti *TextInput) Update(key string) (change bool, err error) {
-	if !ti.focus {
+	if !ti.Focused {
 		return
+	}
+
+	onChange := func() {
+		if ti.Trigger != nil {
+			ti.Trigger(ti.TriggerArgument)
+		}
+		change = true
 	}
 
 	// char / symbol
 	if len(key) == 1 {
 		err = ti.InsertText(rune(key[0]))
-		change = true
+		onChange()
 		return
 	}
 
@@ -177,17 +199,17 @@ func (ti *TextInput) Update(key string) (change bool, err error) {
 	case "ctrl+right", "alt+f":
 		ti.MoveCursorRightWord()
 	case "backspace":
-		ti.DeleteBeforeCursor()
-		change = true
+		_, err = ti.DeleteBeforeCursor()
+		onChange()
 	case "delete":
-		ti.DeleteAfterCursor()
-		change = true
+		_, err = ti.DeleteAfterCursor()
+		onChange()
 	case "alt+delete":
-		ti.DeleteWordAfterCursor()
-		change = true
+		_, err = ti.DeleteWordAfterCursor()
+		onChange()
 	case "ctrl+backspace", "ctrl+w", "ctrl+h":
-		ti.DeleteWordBeforeCursor()
-		change = true
+		_, err = ti.DeleteWordBeforeCursor()
+		onChange()
 	}
 
 	return
@@ -206,7 +228,7 @@ func (ti *TextInput) InsertText(ch rune) (err error) {
 		)
 
 		ti.Text.Reset()
-		ti.Text.WriteString(preCursorText + string(ch) + postCursorText)
+		_, err = ti.Text.WriteString(preCursorText + string(ch) + postCursorText)
 	}
 
 	ti.MoveCursorRight()
@@ -356,7 +378,7 @@ func (ti TextInput) View() string {
 		cursorChar = string(text[pos])
 	}
 
-	if ti.focus {
+	if ti.Focused {
 		cursorChar = lb.SetColor(ti.CursorColor, cursorChar)
 	}
 
@@ -366,7 +388,7 @@ func (ti TextInput) View() string {
 		text = lb.SetColor(ti.TextColor, text)
 	}
 
-	if !ti.HasBorder && ti.focus {
+	if !ti.HasBorder && ti.Focused {
 		text = lb.SetColor(ti.FocusedColor, text)
 	}
 
@@ -381,10 +403,15 @@ func (ti TextInput) View() string {
 	)
 
 	if ti.HasBorder {
-		if ti.focus {
+		if ti.Focused {
 			ti.Border.ColorFg = ti.FocusedColor
 		}
-		out = lb.Border(ti.Border, out)
+
+		out = lb.Border(ti.Border, out,
+			ti.NoTopBorder,
+			ti.NoRightBorder,
+			ti.NoBottomBorder,
+			ti.NoLeftBorder)
 	}
 
 	return out
@@ -417,15 +444,31 @@ func (ti *TextInput) GetWidth() int {
 }
 
 func (ti *TextInput) HasFocus() bool {
-	return ti.focus
+	return ti.Focused
+}
+
+func (ti *TextInput) FocusToggle() {
+	ti.Focused = !ti.Focused
 }
 
 func (ti *TextInput) Focus() {
-	ti.focus = true
+	ti.Focused = true
 }
 
 func (ti *TextInput) DeFocus() {
-	ti.focus = false
+	ti.Focused = false
+}
+
+func (ti *TextInput) SetTrigger(t func(any) error) {
+	ti.Trigger = t
+}
+
+func (ti *TextInput) GetTrigger() func(any) error {
+	return ti.Trigger
+}
+
+func (ti *TextInput) SetTriggerArgument(a any) {
+	ti.TriggerArgument = a
 }
 
 func (ti *TextInput) GetText() string {
